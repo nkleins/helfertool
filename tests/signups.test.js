@@ -2,12 +2,16 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createDb } from '../src/db.js';
 import { createShift } from '../src/repositories/shifts.js';
-import { createSignup, listSignupsByShift, deleteSignup, moveSignup, listAllSignups }
-  from '../src/repositories/signups.js';
+import { seedArea } from './helpers.js';
+import {
+  createSignup, listSignupsByShift, deleteSignup, moveSignup, listAllSignups,
+  listByToken, cancelOwnSignup,
+} from '../src/repositories/signups.js';
 
 function shift(db, capacity = 2) {
+  const area_id = seedArea(db);
   return createShift(db, {
-    area: 'Bar', title: 'Bar', starts_at: '2026-09-25T18:00',
+    area_id, title: 'Bar', starts_at: '2026-09-25T18:00',
     ends_at: '2026-09-25T20:00', capacity, notes: null,
   });
 }
@@ -62,4 +66,27 @@ test('listAllSignups joins shift info', () => {
   const [row] = listAllSignups(db);
   assert.equal(row.shift_title, 'Bar');
   assert.equal(row.name, 'A');
+});
+
+test('createSignup speichert device_token; listByToken filtert danach', () => {
+  const db = createDb(':memory:');
+  const area_id = seedArea(db);
+  const sid = createShift(db, { area_id, title: 'Bar', starts_at: '2026-09-25T18:00', ends_at: '2026-09-25T19:00', capacity: 5, notes: null });
+  createSignup(db, { shift_id: sid, name: 'Anna Meyer', device_token: 'tok-1' });
+  createSignup(db, { shift_id: sid, name: 'Ben Kraus', device_token: 'tok-2' });
+  const mine = listByToken(db, 'tok-1');
+  assert.equal(mine.length, 1);
+  assert.equal(mine[0].name, 'Anna Meyer');
+  assert.equal(mine[0].area_name, 'Bar');
+});
+
+test('cancelOwnSignup löscht nur bei passendem Token', () => {
+  const db = createDb(':memory:');
+  const area_id = seedArea(db);
+  const sid = createShift(db, { area_id, title: 'Bar', starts_at: '2026-09-25T18:00', ends_at: '2026-09-25T19:00', capacity: 5, notes: null });
+  const { id } = createSignup(db, { shift_id: sid, name: 'Anna', device_token: 'tok-1' });
+  assert.deepEqual(cancelOwnSignup(db, id, 'tok-2'), { ok: false, reason: 'forbidden' });
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM signups').get().n, 1);
+  assert.deepEqual(cancelOwnSignup(db, id, 'tok-1'), { ok: true });
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM signups').get().n, 0);
 });
