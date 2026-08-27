@@ -1,0 +1,29 @@
+<div class="meine">
+  <div class="admin-bar">
+    <h2>Meine Schichten</h2>
+    <div class="admin-actions"><a href="/">← Zum Plan</a></div>
+  </div>
+  <% if (!it.items.length) { %>
+    <p class="empty">Auf diesem Gerät bist du noch nicht eingetragen. Trag dich auf dem
+      <a href="/">Schichtplan</a> ein — deine Anmeldungen erscheinen dann hier.</p>
+    <p class="hint">Eintragungen von einem anderen Gerät kannst du hier nicht sehen oder abmelden —
+      dafür bitte an einen Admin wenden.</p>
+  <% } else { %>
+    <ul class="mine-list">
+      <% it.items.forEach(function(s){ %>
+        <li class="mine-item" style="--area-color:<%= s.area_color %>">
+          <div>
+            <span class="dot" style="background:<%= s.area_color %>"></span>
+            <strong><%= s.area_name %></strong><% if (s.title) { %> · <%= s.title %><% } %>
+            <div class="mine-time"><%= s.dayLabel %>, <%= s.time %></div>
+          </div>
+          <form method="post" action="/signup/<%= s.signup_id %>/cancel" class="inline"
+                onsubmit="return confirm('Von dieser Schicht abmelden?')">
+            <input type="hidden" name="csrf" value="<%= it.csrf %>">
+            <button type="submit" class="danger">Abmelden</button>
+          </form>
+        </li>
+      <% }) %>
+    </ul>
+  <% } %>
+</div>
