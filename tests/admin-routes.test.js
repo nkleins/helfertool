@@ -222,6 +222,18 @@ test('Admin kann Bereich aktualisieren', async () => {
   await app.close();
 });
 
+test('Aktualisieren mit ungültigem Namen zeigt Fehler und ändert nichts', async () => {
+  const { app, db, cookie, csrf } = await adminSession();
+  const id = seedArea(db, { name: 'Alt', color: '#111111', sort_order: 0 });
+  const res = await app.inject({ method: 'POST', url: `/admin/areas/${id}`,
+    headers: { cookie }, payload: { csrf, name: '', color: '#222222', sort_order: '3' } });
+  assert.equal(res.statusCode, 200);
+  assert.match(res.body, /erforderlich/);
+  const unchanged = db.prepare('SELECT * FROM areas WHERE id = ?').get(id);
+  assert.equal(unchanged.name, 'Alt');
+  await app.close();
+});
+
 test('Aktualisieren eines unbekannten Bereichs liefert 404', async () => {
   const { app, cookie, csrf } = await adminSession();
   const res = await app.inject({ method: 'POST', url: '/admin/areas/999999',

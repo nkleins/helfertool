@@ -89,10 +89,6 @@ th, td { border: 1px solid var(--line); padding: .5rem; text-align: left; font-s
 .area-form { grid-auto-flow: column; grid-template-columns: 1fr auto auto auto; align-items: center; }
 .shift-form label { display: grid; gap: .25rem; }
 
-/* Zeilen-Formular in der Bereichs-Tabelle (admin-areas.eta): Form-Umbruch soll die
-   Tabellenzelle-Darstellung der darin liegenden td-Elemente nicht stören. */
-.row-form { display: contents; }
-
 /* Admin-Login */
 .admin-login { max-width: 320px; margin: 2.5rem auto; display: grid; gap: .6rem; text-align: center; }
 .admin-login form { display: grid; gap: .5rem; }

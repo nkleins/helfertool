@@ -6,7 +6,7 @@ import { listSignupsByShift, createSignup, deleteSignup, moveSignup, listAllSign
 import { validateShiftInput, validateSignupInput, validateAreaInput, validateGenerateInput } from '../validate.js';
 import { listAreas, createArea, getArea, updateArea, deleteArea } from '../repositories/areas.js';
 import { signupsCsv } from '../csv.js';
-import { displayName, formatTime, formatDay } from '../display.js';
+import { formatTime, formatDay } from '../display.js';
 
 export function requireAdmin(req, reply) {
   if (!req.isAdmin) {
@@ -242,7 +242,12 @@ export function registerAdminRoutes(app) {
     const id = Number(req.params.id);
     if (!getArea(db, id)) return reply.code(404).send('Bereich nicht gefunden.');
     const v = validateAreaInput(req.body);
-    if (v.ok) updateArea(db, id, v.value);
+    if (!v.ok) {
+      return reply.code(200).type('text/html').send(app.render('admin-areas', {
+        title: 'Bereiche', areas: listAreas(db), csrf: req.session.csrf, errors: v.errors,
+      }));
+    }
+    updateArea(db, id, v.value);
     return reply.redirect('/admin/areas');
   });
 
