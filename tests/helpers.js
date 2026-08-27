@@ -1,5 +1,6 @@
 import { createDb } from '../src/db.js';
 import { buildApp } from '../src/server.js';
+import { createArea } from '../src/repositories/areas.js';
 
 export const testConfig = {
   adminUser: 'admin',
@@ -16,4 +17,8 @@ export async function makeApp(overrides = {}) {
   const app = buildApp({ ...testConfig, ...overrides }, db);
   await app.ready();
   return { app, db };
+}
+
+export function seedArea(db, overrides = {}) {
+  return createArea(db, { name: 'Bar', color: '#888888', sort_order: 0, ...overrides });
 }
