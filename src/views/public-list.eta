@@ -2,37 +2,67 @@
   <div class="errors"><% it.errors.forEach(function(e){ %><p><%= e %></p><% }) %></div>
 <% } %>
 
-<p class="intro">Trag dich für eine Schicht ein. Nur dein Name ist Pflicht –
-die Telefonnummer ist freiwillig.</p>
+<p class="intro">Trag dich für eine Schicht ein. Nur dein Vorname ist Pflicht.
+  <a href="/meine">Meine Schichten →</a></p>
 
-<% if (!it.groups || !it.groups.length) { %>
-  <p>Aktuell sind keine Schichten ausgeschrieben.</p>
-<% } %>
+<% if (!it.areas.length) { %>
+  <p>Aktuell sind keine Bereiche/Schichten ausgeschrieben.</p>
+<% } else { %>
+<div class="tabs" role="tablist">
+  <% it.areas.forEach(function(a, i){ %>
+    <button class="tab<%= i === 0 ? ' active' : '' %>" data-tab="area-<%= a.id %>"
+            style="--tab-color:<%= a.color %>"><%= a.name %></button>
+  <% }) %>
+</div>
 
-<% ;(it.groups || []).forEach(function(group){ %>
-  <section class="area">
-    <h2><%= group.area %></h2>
-    <% group.items.forEach(function(s){ %>
-      <div class="shift <%= s.free <= 0 ? 'full' : '' %>">
-        <div class="shift-head">
-          <strong><%= s.title %></strong>
-          <span class="time"><%= s.starts_at.replace('T',' ') %> – <%= s.ends_at.slice(11) %></span>
-          <span class="slots"><%= s.free %> von <%= s.capacity %> frei</span>
+<% it.areas.forEach(function(a, i){ %>
+  <section class="area-panel<%= i === 0 ? ' active' : '' %>" id="area-<%= a.id %>" style="--area-color:<%= a.color %>">
+    <% if (!a.shifts.length) { %>
+      <p class="empty">Für „<%= a.name %>" gibt es noch keine Schichten.</p>
+    <% } %>
+    <% a.shifts.forEach(function(s){ %>
+      <div class="slot <%= s.free <= 0 ? 'slot-full' : 'slot-free' %>">
+        <div class="slot-time"><span class="day"><%= s.dayLabel %></span><strong><%= s.time %></strong></div>
+        <div class="slot-body">
+          <% if (s.title) { %><div class="slot-title"><%= s.title %></div><% } %>
+          <div class="slot-status">
+            <% if (s.free > 0) { %><span class="free-badge"><%= s.free %> von <%= s.capacity %> frei</span>
+            <% } else { %><span class="full-badge">Voll</span><% } %>
+          </div>
+          <% if (s.names.length) { %>
+            <ul class="names"><% s.names.forEach(function(n){ %><li><%= n %></li><% }) %></ul>
+          <% } %>
+          <% if (s.notes) { %><p class="notes"><%= s.notes %></p><% } %>
+          <% if (s.free > 0) { %>
+            <form method="post" action="/signup" class="signup-form">
+              <input type="hidden" name="csrf" value="<%= it.csrf %>">
+              <input type="hidden" name="shift_id" value="<%= s.id %>">
+              <input type="text" name="name" placeholder="Dein Vorname" required maxlength="500">
+              <input type="tel" name="phone" placeholder="Telefon (optional)" maxlength="500">
+              <button type="submit">Eintragen</button>
+            </form>
+          <% } %>
         </div>
-        <% if (s.notes) { %><p class="notes"><%= s.notes %></p><% } %>
-        <% if (s.free > 0) { %>
-          <form method="post" action="/signup" class="signup-form">
-            <input type="hidden" name="csrf" value="<%= it.csrf %>">
-            <input type="hidden" name="shift_id" value="<%= s.id %>">
-            <input type="text" name="name" placeholder="Dein Name" required maxlength="500">
-            <input type="tel" name="phone" placeholder="Telefon (optional)" maxlength="500">
-            <input type="text" name="note" placeholder="Notiz (optional)" maxlength="500">
-            <button type="submit">Eintragen</button>
-          </form>
-        <% } else { %>
-          <p class="full-label">Ausgebucht</p>
-        <% } %>
       </div>
     <% }) %>
   </section>
 <% }) %>
+
+<script>
+(function () {
+  var tabs = document.querySelectorAll('.tab');
+  var panels = document.querySelectorAll('.area-panel');
+  function show(id) {
+    panels.forEach(function (p) { p.classList.toggle('active', p.id === id); });
+    tabs.forEach(function (t) { t.classList.toggle('active', t.dataset.tab === id); });
+    try { localStorage.setItem('kv-area', id); } catch (e) {}
+  }
+  tabs.forEach(function (t) { t.addEventListener('click', function () { show(t.dataset.tab); }); });
+  try {
+    var saved = localStorage.getItem('kv-area');
+    if (saved && document.getElementById(saved)) show(saved);
+  } catch (e) {}
+  document.body.classList.add('js');
+})();
+</script>
+<% } %>
