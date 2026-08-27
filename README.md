@@ -43,4 +43,10 @@ docker compose up -d --build
 - QR-Code: im Admin unter „QR-Code" → ausdrucken/aushängen.
 - Export: „CSV-Export" lädt alle Eintragungen.
 
+### Bereiche & Schicht-Generator
+Zuerst Bereiche unter `/admin/areas` anlegen (Name, Farbe, Sortierung), dann Schichten
+unter `/admin/shifts/new` per Zeitfenster (Datum, von/bis, Slot-Länge, Kapazität) erzeugen.
+Die öffentliche Seite `/` zeigt pro Bereich einen Stundenplan zum Anmelden; `/meine` zeigt
+gerätebasiert (Cookie) die eigenen Anmeldungen zum Nachschauen und Abmelden.
+
 Die SQLite-DB liegt in `./data/app.db` (Docker-Volume) – für Backups einfach diese Datei sichern.
