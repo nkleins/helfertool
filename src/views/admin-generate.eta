@@ -1,0 +1,38 @@
+<div class="admin">
+  <div class="admin-bar">
+    <h2>Schichten erzeugen</h2>
+    <div class="admin-actions"><a href="/admin">← Dashboard</a> · <a href="/admin/areas">Bereiche</a></div>
+  </div>
+  <% if (it.errors && it.errors.length) { %>
+    <div class="errors"><% it.errors.forEach(function(e){ %><p><%= e %></p><% }) %></div>
+  <% } %>
+  <% if (!it.areas.length) { %>
+    <p>Bitte lege zuerst einen <a href="/admin/areas">Bereich</a> an.</p>
+  <% } else { %>
+  <form method="post" action="/admin/shifts/generate" class="shift-form">
+    <input type="hidden" name="csrf" value="<%= it.csrf %>">
+    <label>Bereich
+      <select name="area_id" required>
+        <% it.areas.forEach(function(a){ %>
+          <option value="<%= a.id %>" <%= String(a.id) === String(it.values.area_id) ? 'selected' : '' %>><%= a.name %></option>
+        <% }) %>
+      </select>
+    </label>
+    <label>Titel (optional) <input name="title" value="<%= it.values.title || '' %>"></label>
+    <label>Datum <input type="date" name="date" value="<%= it.values.date || '' %>" required></label>
+    <label>Von <input type="time" name="from" value="<%= it.values.from || '' %>" required></label>
+    <label>Bis <input type="time" name="to" value="<%= it.values.to || '' %>" required></label>
+    <label>Schichtlänge
+      <select name="slot_minutes">
+        <% ;[30,60,90,120].forEach(function(m){ %>
+          <option value="<%= m %>" <%= String(m) === String(it.values.slot_minutes) ? 'selected' : '' %>><%= m %> min</option>
+        <% }) %>
+      </select>
+    </label>
+    <label>Plätze pro Schicht <input type="number" min="1" name="capacity" value="<%= it.values.capacity || 2 %>" required></label>
+    <label>Notiz (optional, an alle) <input name="notes" value="<%= it.values.notes || '' %>"></label>
+    <button type="submit">Schichten erzeugen</button>
+    <a href="/admin">Abbrechen</a>
+  </form>
+  <% } %>
+</div>

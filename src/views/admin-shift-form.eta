@@ -5,8 +5,14 @@
   <% } %>
   <form method="post" action="<%= it.action %>" class="shift-form">
     <input type="hidden" name="csrf" value="<%= it.csrf %>">
-    <label>Bereich <input name="area" value="<%= it.shift.area %>" required></label>
-    <label>Titel <input name="title" value="<%= it.shift.title %>" required></label>
+    <label>Bereich
+      <select name="area_id" required>
+        <% it.areas.forEach(function(a){ %>
+          <option value="<%= a.id %>" <%= String(a.id) === String(it.shift.area_id) ? 'selected' : '' %>><%= a.name %></option>
+        <% }) %>
+      </select>
+    </label>
+    <label>Titel (optional) <input name="title" value="<%= it.shift.title || '' %>"></label>
     <label>Beginn <input type="datetime-local" name="starts_at" value="<%= it.shift.starts_at %>" required></label>
     <label>Ende <input type="datetime-local" name="ends_at" value="<%= it.shift.ends_at %>" required></label>
     <label>Plätze <input type="number" min="1" name="capacity" value="<%= it.shift.capacity %>" required></label>

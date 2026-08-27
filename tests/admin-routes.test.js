@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeApp, seedArea } from './helpers.js';
 import { hashPassword } from '../src/auth.js';
+import { createShift } from '../src/repositories/shifts.js';
 
 async function login(app, db, user = 'admin', pass = 'geheim') {
   const g = await app.inject({ method: 'GET', url: '/admin/login' });
@@ -52,15 +53,24 @@ test('GET /admin without login redirects', async () => {
   await app.close();
 });
 
-test('admin can create a shift', async () => {
-  const { app, db } = await makeApp({ adminPasswordHash: hashPassword('geheim') });
-  const { cookie } = await login(app, db);
-  const csrf = db.prepare('SELECT csrf FROM sessions ORDER BY rowid DESC LIMIT 1').get().csrf;
-  const res = await app.inject({ method: 'POST', url: '/admin/shifts', headers: { cookie },
-    payload: { csrf, area: 'Bar', title: 'Bar Fr', starts_at: '2026-09-25T18:00',
-      ends_at: '2026-09-25T20:00', capacity: '3', notes: '' } });
+test('Generator erzeugt mehrere Schichten aus einem Zeitfenster', async () => {
+  const { app, db, cookie, csrf } = await adminSession();
+  const area_id = seedArea(db);
+  const res = await app.inject({ method: 'POST', url: '/admin/shifts/generate',
+    headers: { cookie }, payload: { csrf, area_id: String(area_id), title: 'Frühdienst',
+      date: '2026-09-25', from: '08:00', to: '10:00', slot_minutes: '30', capacity: '3', notes: '' } });
   assert.equal(res.statusCode, 302);
-  assert.equal(db.prepare('SELECT COUNT(*) n FROM shifts').get().n, 1);
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM shifts').get().n, 4);
+  await app.close();
+});
+
+test('Generator mit ungültiger Schichtlänge zeigt Fehler (kein Redirect)', async () => {
+  const { app, db, cookie, csrf } = await adminSession();
+  const area_id = seedArea(db);
+  const res = await app.inject({ method: 'POST', url: '/admin/shifts/generate',
+    headers: { cookie }, payload: { csrf, area_id: String(area_id), date: '2026-09-25', from: '08:00', to: '10:00', slot_minutes: '45', capacity: '3' } });
+  assert.equal(res.statusCode, 200);
+  assert.match(res.body, /Schichtlänge/);
   await app.close();
 });
 
@@ -68,8 +78,9 @@ test('admin can delete a shift', async () => {
   const { app, db } = await makeApp({ adminPasswordHash: hashPassword('geheim') });
   const { cookie } = await login(app, db);
   const csrf = db.prepare('SELECT csrf FROM sessions ORDER BY rowid DESC LIMIT 1').get().csrf;
-  db.prepare(`INSERT INTO shifts (area,title,starts_at,ends_at,capacity)
-    VALUES ('Bar','x','2026-09-25T18:00','2026-09-25T20:00',3)`).run();
+  const area_id = seedArea(db);
+  createShift(db, { area_id, title: 'x', starts_at: '2026-09-25T18:00',
+    ends_at: '2026-09-25T20:00', capacity: 3, notes: null });
   const id = db.prepare('SELECT id FROM shifts LIMIT 1').get().id;
   const res = await app.inject({ method: 'POST', url: `/admin/shifts/${id}/delete`,
     headers: { cookie }, payload: { csrf } });
@@ -78,24 +89,13 @@ test('admin can delete a shift', async () => {
   await app.close();
 });
 
-test('create shift rejects invalid time order', async () => {
-  const { app, db } = await makeApp({ adminPasswordHash: hashPassword('geheim') });
-  const { cookie } = await login(app, db);
-  const csrf = db.prepare('SELECT csrf FROM sessions ORDER BY rowid DESC LIMIT 1').get().csrf;
-  const res = await app.inject({ method: 'POST', url: '/admin/shifts', headers: { cookie },
-    payload: { csrf, area: 'Bar', title: 'x', starts_at: '2026-09-25T20:00',
-      ends_at: '2026-09-25T18:00', capacity: '3', notes: '' } });
-  assert.equal(res.statusCode, 200);
-  assert.match(res.body, /nach dem Start/);
-  await app.close();
-});
-
 test('admin adds and removes a signup on a shift', async () => {
   const { app, db } = await makeApp({ adminPasswordHash: hashPassword('geheim') });
   const { cookie } = await login(app, db);
   const csrf = db.prepare('SELECT csrf FROM sessions ORDER BY rowid DESC LIMIT 1').get().csrf;
-  db.prepare(`INSERT INTO shifts (area,title,starts_at,ends_at,capacity)
-    VALUES ('Bar','x','2026-09-25T18:00','2026-09-25T20:00',2)`).run();
+  const area_id = seedArea(db);
+  createShift(db, { area_id, title: 'x', starts_at: '2026-09-25T18:00',
+    ends_at: '2026-09-25T20:00', capacity: 2, notes: null });
   const id = db.prepare('SELECT id FROM shifts LIMIT 1').get().id;
 
   const add = await app.inject({ method: 'POST', url: `/admin/shifts/${id}/signups`,
@@ -113,8 +113,9 @@ test('admin adds and removes a signup on a shift', async () => {
 test('admin detail page shows signups', async () => {
   const { app, db } = await makeApp({ adminPasswordHash: hashPassword('geheim') });
   const { cookie } = await login(app, db);
-  db.prepare(`INSERT INTO shifts (area,title,starts_at,ends_at,capacity)
-    VALUES ('Bar','x','2026-09-25T18:00','2026-09-25T20:00',2)`).run();
+  const area_id = seedArea(db);
+  createShift(db, { area_id, title: 'x', starts_at: '2026-09-25T18:00',
+    ends_at: '2026-09-25T20:00', capacity: 2, notes: null });
   const id = db.prepare('SELECT id FROM shifts LIMIT 1').get().id;
   db.prepare('INSERT INTO signups (shift_id,name,created_at) VALUES (?,?,?)')
     .run(id, 'Cara', '2026-01-01T00:00');
@@ -127,8 +128,9 @@ test('admin detail page shows signups', async () => {
 test('csv export returns text/csv with header', async () => {
   const { app, db } = await makeApp({ adminPasswordHash: hashPassword('geheim') });
   const { cookie } = await login(app, db);
-  db.prepare(`INSERT INTO shifts (area,title,starts_at,ends_at,capacity)
-    VALUES ('Bar','x','2026-09-25T18:00','2026-09-25T20:00',2)`).run();
+  const area_id = seedArea(db);
+  createShift(db, { area_id, title: 'x', starts_at: '2026-09-25T18:00',
+    ends_at: '2026-09-25T20:00', capacity: 2, notes: null });
   const id = db.prepare('SELECT id FROM shifts LIMIT 1').get().id;
   db.prepare('INSERT INTO signups (shift_id,name,created_at) VALUES (?,?,?)')
     .run(id, 'Dana', '2026-01-01T00:00');

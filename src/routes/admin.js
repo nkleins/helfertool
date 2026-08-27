@@ -1,9 +1,9 @@
 import QRCode from 'qrcode';
 import { verifyPassword, createSession, deleteSession } from '../auth.js';
 import { requireCsrf, rateLimiter } from '../server.js';
-import { createShift, getShift, updateShift, deleteShift, listShifts } from '../repositories/shifts.js';
+import { getShift, updateShift, deleteShift, listShifts, generateShifts, planSlots } from '../repositories/shifts.js';
 import { listSignupsByShift, createSignup, deleteSignup, moveSignup, listAllSignups } from '../repositories/signups.js';
-import { validateShiftInput, validateSignupInput, validateAreaInput } from '../validate.js';
+import { validateShiftInput, validateSignupInput, validateAreaInput, validateGenerateInput } from '../validate.js';
 import { listAreas, createArea, getArea, updateArea, deleteArea } from '../repositories/areas.js';
 import { signupsCsv } from '../csv.js';
 
@@ -63,24 +63,31 @@ export function registerAdminRoutes(app) {
 
   app.get('/admin/shifts/new', (req, reply) => {
     if (!requireAdmin(req, reply)) return;
-    reply.type('text/html').send(app.render('admin-shift-form', {
-      title: 'Neue Schicht', csrf: req.session.csrf, action: '/admin/shifts',
-      shift: { area: '', title: '', starts_at: '', ends_at: '', capacity: 1, notes: '' },
-      errors: [],
+    reply.type('text/html').send(app.render('admin-generate', {
+      title: 'Schichten erzeugen', areas: listAreas(db), csrf: req.session.csrf,
+      values: { area_id: '', title: '', date: '', from: '', to: '', slot_minutes: '60', capacity: '2', notes: '' },
+      errors: [], preview: null,
     }));
   });
 
-  app.post('/admin/shifts', (req, reply) => {
+  app.post('/admin/shifts/generate', (req, reply) => {
     if (!requireAdmin(req, reply)) return;
     if (!requireCsrf(req, reply)) return;
-    const v = validateShiftInput(req.body);
+    const v = validateGenerateInput(req.body);
     if (!v.ok) {
-      return reply.code(200).type('text/html').send(app.render('admin-shift-form', {
-        title: 'Neue Schicht', csrf: req.session.csrf, action: '/admin/shifts',
-        shift: req.body, errors: v.errors,
+      return reply.code(200).type('text/html').send(app.render('admin-generate', {
+        title: 'Schichten erzeugen', areas: listAreas(db), csrf: req.session.csrf,
+        values: req.body, errors: v.errors, preview: null,
       }));
     }
-    createShift(db, v.value);
+    const slots = planSlots(v.value);
+    if (slots.length === 0) {
+      return reply.code(200).type('text/html').send(app.render('admin-generate', {
+        title: 'Schichten erzeugen', areas: listAreas(db), csrf: req.session.csrf,
+        values: req.body, errors: ['Das Zeitfenster ist kürzer als eine Schicht.'], preview: null,
+      }));
+    }
+    generateShifts(db, v.value);
     return reply.redirect('/admin');
   });
 
@@ -90,7 +97,7 @@ export function registerAdminRoutes(app) {
     if (!shift) return reply.code(404).send('Schicht nicht gefunden.');
     reply.type('text/html').send(app.render('admin-shift-form', {
       title: 'Schicht bearbeiten', csrf: req.session.csrf,
-      action: `/admin/shifts/${shift.id}`, shift, errors: [],
+      action: `/admin/shifts/${shift.id}`, shift, areas: listAreas(db), errors: [],
     }));
   });
 
@@ -102,7 +109,7 @@ export function registerAdminRoutes(app) {
     if (!v.ok) {
       return reply.code(200).type('text/html').send(app.render('admin-shift-form', {
         title: 'Schicht bearbeiten', csrf: req.session.csrf,
-        action: `/admin/shifts/${id}`, shift: { ...req.body, id }, errors: v.errors,
+        action: `/admin/shifts/${id}`, shift: { ...req.body, id }, areas: listAreas(db), errors: v.errors,
       }));
     }
     updateShift(db, id, v.value);
