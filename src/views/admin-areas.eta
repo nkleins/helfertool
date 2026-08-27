@@ -1,0 +1,43 @@
+<div class="admin">
+  <div class="admin-bar">
+    <h2>Bereiche</h2>
+    <div class="admin-actions"><a href="/admin">← Dashboard</a></div>
+  </div>
+  <% if (it.errors && it.errors.length) { %>
+    <div class="errors"><% it.errors.forEach(function(e){ %><p><%= e %></p><% }) %></div>
+  <% } %>
+
+  <form method="post" action="/admin/areas" class="area-form">
+    <input type="hidden" name="csrf" value="<%= it.csrf %>">
+    <input name="name" placeholder="Neuer Bereich (z.B. Küche)" required maxlength="500">
+    <input type="color" name="color" value="#33aa88" aria-label="Farbe">
+    <input type="number" name="sort_order" value="0" aria-label="Reihenfolge" style="width:5rem">
+    <button type="submit">Anlegen</button>
+  </form>
+
+  <table>
+    <thead><tr><th>Bereich</th><th>Farbe</th><th>Reihenfolge</th><th></th></tr></thead>
+    <tbody>
+    <% it.areas.forEach(function(a){ %>
+      <tr>
+        <form method="post" action="/admin/areas/<%= a.id %>" class="row-form">
+          <input type="hidden" name="csrf" value="<%= it.csrf %>">
+          <td><input name="name" value="<%= a.name %>" maxlength="500"></td>
+          <td><input type="color" name="color" value="<%= a.color %>"></td>
+          <td><input type="number" name="sort_order" value="<%= a.sort_order %>" style="width:5rem"></td>
+          <td>
+            <button type="submit">Speichern</button>
+          </td>
+        </form>
+        <td>
+          <form method="post" action="/admin/areas/<%= a.id %>/delete" class="inline"
+                onsubmit="return confirm('Bereich und alle seine Schichten löschen?')">
+            <input type="hidden" name="csrf" value="<%= it.csrf %>">
+            <button type="submit" class="danger">Löschen</button>
+          </form>
+        </td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table>
+</div>

@@ -3,7 +3,8 @@ import { verifyPassword, createSession, deleteSession } from '../auth.js';
 import { requireCsrf, rateLimiter } from '../server.js';
 import { createShift, getShift, updateShift, deleteShift, listShifts } from '../repositories/shifts.js';
 import { listSignupsByShift, createSignup, deleteSignup, moveSignup, listAllSignups } from '../repositories/signups.js';
-import { validateShiftInput, validateSignupInput } from '../validate.js';
+import { validateShiftInput, validateSignupInput, validateAreaInput } from '../validate.js';
+import { listAreas, createArea, getArea, updateArea, deleteArea } from '../repositories/areas.js';
 import { signupsCsv } from '../csv.js';
 
 export function requireAdmin(req, reply) {
@@ -184,5 +185,42 @@ export function registerAdminRoutes(app) {
     if (!requireAdmin(req, reply)) return;
     const svg = await QRCode.toString(`${config.baseUrl}/`, { type: 'svg', margin: 2 });
     reply.header('Content-Type', 'image/svg+xml').send(svg);
+  });
+
+  app.get('/admin/areas', (req, reply) => {
+    if (!requireAdmin(req, reply)) return;
+    reply.type('text/html').send(app.render('admin-areas', {
+      title: 'Bereiche', areas: listAreas(db), csrf: req.session.csrf, errors: [],
+    }));
+  });
+
+  app.post('/admin/areas', (req, reply) => {
+    if (!requireAdmin(req, reply)) return;
+    if (!requireCsrf(req, reply)) return;
+    const v = validateAreaInput(req.body);
+    if (!v.ok) {
+      return reply.code(200).type('text/html').send(app.render('admin-areas', {
+        title: 'Bereiche', areas: listAreas(db), csrf: req.session.csrf, errors: v.errors,
+      }));
+    }
+    createArea(db, v.value);
+    return reply.redirect('/admin/areas');
+  });
+
+  app.post('/admin/areas/:id', (req, reply) => {
+    if (!requireAdmin(req, reply)) return;
+    if (!requireCsrf(req, reply)) return;
+    const id = Number(req.params.id);
+    if (!getArea(db, id)) return reply.code(404).send('Bereich nicht gefunden.');
+    const v = validateAreaInput(req.body);
+    if (v.ok) updateArea(db, id, v.value);
+    return reply.redirect('/admin/areas');
+  });
+
+  app.post('/admin/areas/:id/delete', (req, reply) => {
+    if (!requireAdmin(req, reply)) return;
+    if (!requireCsrf(req, reply)) return;
+    deleteArea(db, Number(req.params.id));
+    return reply.redirect('/admin/areas');
   });
 }

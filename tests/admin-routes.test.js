@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeApp } from './helpers.js';
+import { makeApp, seedArea } from './helpers.js';
 import { hashPassword } from '../src/auth.js';
 
 async function login(app, db, user = 'admin', pass = 'geheim') {
@@ -16,6 +16,13 @@ async function login(app, db, user = 'admin', pass = 'geheim') {
   const rotated = [].concat(res.headers['set-cookie'] ?? [])
     .map((c) => c.split(';')[0]).join('; ');
   return { res, cookie: rotated || cookie };
+}
+
+async function adminSession() {
+  const { app, db } = await makeApp({ adminPasswordHash: hashPassword('geheim') });
+  const { cookie } = await login(app, db);
+  const csrf = db.prepare("SELECT csrf FROM sessions WHERE is_admin = 1 ORDER BY rowid DESC LIMIT 1").get().csrf;
+  return { app, db, cookie, csrf };
 }
 
 test('login rejects wrong password', async () => {
@@ -146,5 +153,63 @@ test('qr endpoints require admin', async () => {
   const { app } = await makeApp({ adminPasswordHash: hashPassword('geheim') });
   const res = await app.inject({ method: 'GET', url: '/admin/qr' });
   assert.equal(res.statusCode, 302);
+  await app.close();
+});
+
+test('Admin kann Bereich anlegen und sieht ihn in der Liste', async () => {
+  const { app, db, cookie, csrf } = await adminSession();
+  const res = await app.inject({ method: 'POST', url: '/admin/areas',
+    headers: { cookie }, payload: { csrf, name: 'Küche', color: '#ff8844', sort_order: '1' } });
+  assert.equal(res.statusCode, 302);
+  const list = await app.inject({ method: 'GET', url: '/admin/areas', headers: { cookie } });
+  assert.match(list.body, /Küche/);
+  await app.close();
+});
+
+test('GET /admin/areas ohne Login leitet um', async () => {
+  const { app } = await makeApp({ adminPasswordHash: hashPassword('geheim') });
+  const res = await app.inject({ method: 'GET', url: '/admin/areas' });
+  assert.equal(res.statusCode, 302);
+  assert.equal(res.headers.location, '/admin/login');
+  await app.close();
+});
+
+test('Anlegen mit ungültigem Namen zeigt Fehler', async () => {
+  const { app, cookie, csrf } = await adminSession();
+  const res = await app.inject({ method: 'POST', url: '/admin/areas',
+    headers: { cookie }, payload: { csrf, name: '', color: '#ff8844', sort_order: '1' } });
+  assert.equal(res.statusCode, 200);
+  assert.match(res.body, /erforderlich/);
+  await app.close();
+});
+
+test('Admin kann Bereich aktualisieren', async () => {
+  const { app, db, cookie, csrf } = await adminSession();
+  const id = seedArea(db, { name: 'Alt', color: '#111111', sort_order: 0 });
+  const res = await app.inject({ method: 'POST', url: `/admin/areas/${id}`,
+    headers: { cookie }, payload: { csrf, name: 'Neu', color: '#222222', sort_order: '3' } });
+  assert.equal(res.statusCode, 302);
+  const updated = db.prepare('SELECT * FROM areas WHERE id = ?').get(id);
+  assert.equal(updated.name, 'Neu');
+  assert.equal(updated.color, '#222222');
+  assert.equal(updated.sort_order, 3);
+  await app.close();
+});
+
+test('Aktualisieren eines unbekannten Bereichs liefert 404', async () => {
+  const { app, cookie, csrf } = await adminSession();
+  const res = await app.inject({ method: 'POST', url: '/admin/areas/999999',
+    headers: { cookie }, payload: { csrf, name: 'X', color: '#222222', sort_order: '0' } });
+  assert.equal(res.statusCode, 404);
+  await app.close();
+});
+
+test('Admin kann Bereich löschen', async () => {
+  const { app, db, cookie, csrf } = await adminSession();
+  const id = seedArea(db, { name: 'Löschmich', color: '#111111', sort_order: 0 });
+  const res = await app.inject({ method: 'POST', url: `/admin/areas/${id}/delete`,
+    headers: { cookie }, payload: { csrf } });
+  assert.equal(res.statusCode, 302);
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM areas WHERE id = ?').get(id).n, 0);
   await app.close();
 });
