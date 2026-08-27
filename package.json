@@ -1,0 +1,21 @@
+{
+  "name": "helfer-koelnvention",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test",
+    "hash": "node scripts/hash-password.mjs"
+  },
+  "dependencies": {
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/formbody": "^8.0.2",
+    "@fastify/rate-limit": "^10.2.2",
+    "@fastify/static": "^8.0.4",
+    "eta": "^3.5.0",
+    "fastify": "^5.2.1",
+    "qrcode": "^1.5.4"
+  }
+}

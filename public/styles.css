@@ -1,0 +1,79 @@
+:root {
+  --ink: #0a0a0a;
+  --paper: #f4f4f0;
+  --accent: #ffffff;
+  --danger: #b00020;
+  --tape: #d9d9d9;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--ink); color: var(--paper);
+  font-family: "Courier New", ui-monospace, monospace;
+  line-height: 1.45;
+}
+main { max-width: 720px; margin: 0 auto; padding: 1rem; }
+a { color: var(--paper); }
+
+.site-header {
+  text-align: center; padding: 1.25rem 1rem; border-bottom: 4px solid var(--paper);
+  background: #000;
+}
+.site-header .logo { max-width: 160px; height: auto; }
+.site-header h1 {
+  font-size: 1.6rem; letter-spacing: 2px; text-transform: uppercase; margin: .4rem 0 .2rem;
+}
+.motto {
+  display: inline-block; background: var(--paper); color: var(--ink);
+  padding: .1rem .5rem; transform: rotate(-2deg); font-weight: bold;
+}
+
+h2, h3 { text-transform: uppercase; letter-spacing: 1px; }
+
+.intro { border-left: 4px solid var(--paper); padding-left: .6rem; }
+
+.area { margin-bottom: 1.5rem; }
+.shift {
+  border: 2px solid var(--paper); padding: .75rem; margin: .6rem 0;
+  background: #111;
+}
+.shift.full { opacity: .55; }
+.shift-head { display: flex; flex-wrap: wrap; gap: .5rem; align-items: baseline; }
+.shift-head .slots { margin-left: auto; font-weight: bold; }
+.full-label {
+  display: inline-block; background: var(--danger); color: #fff;
+  padding: .1rem .5rem; transform: rotate(-1deg);
+}
+
+.signup-form { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .6rem; }
+.signup-form input { flex: 1 1 8rem; }
+input, select, button {
+  font: inherit; padding: .5rem; border: 2px solid var(--paper);
+  background: var(--paper); color: var(--ink);
+}
+button {
+  cursor: pointer; text-transform: uppercase; font-weight: bold;
+  background: var(--ink); color: var(--paper);
+}
+button:hover { background: var(--paper); color: var(--ink); }
+
+.errors { border: 2px solid var(--danger); color: #ff9aa2; padding: .5rem; margin: .5rem 0; }
+
+.confirm { text-align: center; padding: 2rem 1rem; }
+
+/* Admin */
+.admin-bar { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; justify-content: space-between; }
+.admin-actions { display: flex; gap: .75rem; flex-wrap: wrap; align-items: center; }
+.admin form.inline { display: inline; }
+table { width: 100%; border-collapse: collapse; margin: .75rem 0; }
+th, td { border: 1px solid var(--paper); padding: .4rem; text-align: left; font-size: .95rem; }
+.shift-form { display: grid; gap: .5rem; max-width: 420px; }
+.shift-form label { display: grid; gap: .2rem; }
+
+.qr-page { text-align: center; }
+.qr-img { max-width: 320px; width: 100%; height: auto; background: #fff; padding: .5rem; }
+
+.site-footer { text-align: center; padding: 1rem; opacity: .6; font-size: .85rem; }
+
+@media (max-width: 480px) {
+  .shift-head .slots { margin-left: 0; }
+}
