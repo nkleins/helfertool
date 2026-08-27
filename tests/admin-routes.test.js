@@ -125,6 +125,30 @@ test('admin detail page shows signups', async () => {
   await app.close();
 });
 
+test('Dashboard zeigt Fortschritt und Schichten', async () => {
+  const { app, db, cookie } = await adminSession();
+  const area_id = seedArea(db, { name: 'Küche' });
+  await app.inject({ method: 'GET', url: '/admin', headers: { cookie } }); // warmup
+  db.prepare(`INSERT INTO shifts (area_id,title,starts_at,ends_at,capacity,notes)
+              VALUES (?,?,?,?,?,?)`).run(area_id, null, '2026-09-25T08:00', '2026-09-25T09:00', 2, null);
+  const res = await app.inject({ method: 'GET', url: '/admin', headers: { cookie } });
+  assert.match(res.body, /Küche/);
+  assert.match(res.body, /belegt/);
+  await app.close();
+});
+
+test('Bulk-Delete entfernt einen Tag eines Bereichs', async () => {
+  const { app, db, cookie, csrf } = await adminSession();
+  const area_id = seedArea(db);
+  db.prepare(`INSERT INTO shifts (area_id,title,starts_at,ends_at,capacity,notes)
+              VALUES (?,?,?,?,?,?)`).run(area_id, null, '2026-09-25T08:00', '2026-09-25T09:00', 1, null);
+  const res = await app.inject({ method: 'POST', url: '/admin/shifts/bulk-delete',
+    headers: { cookie }, payload: { csrf, area_id: String(area_id), day: '2026-09-25' } });
+  assert.equal(res.statusCode, 302);
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM shifts').get().n, 0);
+  await app.close();
+});
+
 test('csv export returns text/csv with header', async () => {
   const { app, db } = await makeApp({ adminPasswordHash: hashPassword('geheim') });
   const { cookie } = await login(app, db);

@@ -1,29 +1,55 @@
 <div class="admin">
   <div class="admin-bar">
-    <h2>Dashboard – Schichten</h2>
+    <h2>Dashboard</h2>
     <div class="admin-actions">
-      <a href="/admin/shifts/new">+ Neue Schicht</a>
-      <a href="/admin/qr">QR-Code</a>
-      <a href="/admin/export.csv">CSV-Export</a>
+      <a href="/admin/shifts/new">+ Schichten erzeugen</a> ·
+      <a href="/admin/areas">Bereiche</a> ·
+      <a href="/admin/qr">QR</a> ·
+      <a href="/admin/export.csv">CSV</a>
       <form method="post" action="/admin/logout" class="inline">
-        <input type="hidden" name="csrf" value="<%= it.csrf %>">
-        <button type="submit">Logout</button>
+        <input type="hidden" name="csrf" value="<%= it.csrf %>"><button type="submit">Logout</button>
       </form>
     </div>
   </div>
-  <table class="shifts-table">
-    <thead><tr><th>Bereich</th><th>Titel</th><th>Beginn</th><th>Belegung</th><th></th></tr></thead>
-    <tbody>
-      <% it.shifts.forEach(function(s){ %>
-        <tr>
-          <td><%= s.area %></td>
-          <td><%= s.title %></td>
-          <td><%= s.starts_at.replace('T',' ') %></td>
-          <td><%= s.taken %>/<%= s.capacity %></td>
-          <td><a href="/admin/shifts/<%= s.id %>">öffnen</a></td>
-        </tr>
-      <% }) %>
-    </tbody>
-  </table>
-  <% if (!it.shifts.length) { %><p>Noch keine Schichten angelegt.</p><% } %>
+
+  <section class="progress">
+    <% it.stats.forEach(function(a){ var pct = a.capacity ? Math.round(a.taken*100/a.capacity) : 0; %>
+      <div class="progress-row">
+        <span class="dot" style="background:<%= a.color %>"></span>
+        <strong><%= a.name %></strong>
+        <span class="bar"><span class="bar-fill" style="width:<%= pct %>%;background:<%= a.color %>"></span></span>
+        <span class="pct"><%= pct %>% belegt (<%= a.taken %>/<%= a.capacity %>) · <%= a.gaps %> Lücken</span>
+      </div>
+    <% }) %>
+  </section>
+
+  <% if (!it.groups.length) { %><p>Noch keine Schichten. <a href="/admin/shifts/new">Jetzt erzeugen.</a></p><% } %>
+
+  <% it.groups.forEach(function(g){ %>
+    <section class="day-group">
+      <div class="day-head">
+        <h3><span class="dot" style="background:<%= g.area_color %>"></span> <%= g.area_name %> · <%= g.dayLabel %></h3>
+        <form method="post" action="/admin/shifts/bulk-delete" class="inline"
+              onsubmit="return confirm('Alle Schichten dieses Bereichs an diesem Tag löschen?')">
+          <input type="hidden" name="csrf" value="<%= it.csrf %>">
+          <input type="hidden" name="area_id" value="<%= g.area_id %>">
+          <input type="hidden" name="day" value="<%= g.day %>">
+          <button type="submit" class="danger">Tag löschen</button>
+        </form>
+      </div>
+      <table>
+        <thead><tr><th>Zeit</th><th>Titel</th><th>Belegt</th><th></th></tr></thead>
+        <tbody>
+        <% g.items.forEach(function(s){ %>
+          <tr class="<%= s.free <= 0 ? 'row-full' : (s.taken > 0 ? 'row-part' : 'row-empty') %>">
+            <td><%= s.time %></td>
+            <td><%= s.title || '—' %></td>
+            <td><%= s.taken %>/<%= s.capacity %></td>
+            <td><a href="/admin/shifts/<%= s.id %>">Details</a> · <a href="/admin/shifts/<%= s.id %>/edit">Bearb.</a></td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table>
+    </section>
+  <% }) %>
 </div>
