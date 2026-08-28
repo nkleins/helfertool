@@ -31,6 +31,24 @@ test('planSlots liefert leer, wenn Fenster kürzer als Schichtlänge', () => {
   assert.deepEqual(planSlots({ date: '2026-09-25', from: '10:00', to: '10:20', slotMinutes: 30 }), []);
 });
 
+test('planSlots über Mitternacht rollt Schichten auf den Folgetag', () => {
+  const slots = planSlots({ date: '2026-09-25', from: '22:00', to: '02:00', slotMinutes: 60 });
+  assert.deepEqual(slots, [
+    { starts_at: '2026-09-25T22:00', ends_at: '2026-09-25T23:00' },
+    { starts_at: '2026-09-25T23:00', ends_at: '2026-09-26T00:00' },
+    { starts_at: '2026-09-26T00:00', ends_at: '2026-09-26T01:00' },
+    { starts_at: '2026-09-26T01:00', ends_at: '2026-09-26T02:00' },
+  ]);
+});
+
+test('planSlots über Mitternacht rollt auch Monats-/Jahresgrenze korrekt', () => {
+  const slots = planSlots({ date: '2026-12-31', from: '23:00', to: '01:00', slotMinutes: 60 });
+  assert.deepEqual(slots, [
+    { starts_at: '2026-12-31T23:00', ends_at: '2027-01-01T00:00' },
+    { starts_at: '2027-01-01T00:00', ends_at: '2027-01-01T01:00' },
+  ]);
+});
+
 test('generateShifts legt alle Schichten mit Kapazität an', () => {
   const db = createDb(':memory:');
   const area_id = seedArea(db);

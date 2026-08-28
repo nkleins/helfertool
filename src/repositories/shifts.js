@@ -35,18 +35,31 @@ export function deleteShift(db, id) {
 
 function pad(n) { return String(n).padStart(2, '0'); }
 
+// Baut aus einem Basisdatum (YYYY-MM-DD) und einem Minuten-Offset (kann >= 1440
+// sein) einen ISO-Zeitstempel YYYY-MM-DDTHH:MM und schiebt das Datum bei
+// Überlauf um ganze Tage weiter (für Schichten über Mitternacht).
+function stampAt(date, minutes) {
+  const MINUTES_PER_DAY = 24 * 60;
+  const dayOffset = Math.floor(minutes / MINUTES_PER_DAY);
+  const mins = minutes % MINUTES_PER_DAY;
+  let day = date;
+  if (dayOffset > 0) {
+    const d = new Date(`${date}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + dayOffset);
+    day = d.toISOString().slice(0, 10);
+  }
+  return `${day}T${pad(Math.floor(mins / 60))}:${pad(mins % 60)}`;
+}
+
 export function planSlots({ date, from, to, slotMinutes }) {
   const [fh, fm] = from.split(':').map(Number);
   const [th, tm] = to.split(':').map(Number);
   const startMin = fh * 60 + fm;
-  const endMin = th * 60 + tm;
+  let endMin = th * 60 + tm;
+  if (endMin <= startMin) endMin += 24 * 60; // Bis <= Von => über Mitternacht
   const slots = [];
   for (let s = startMin; s + slotMinutes <= endMin; s += slotMinutes) {
-    const e = s + slotMinutes;
-    slots.push({
-      starts_at: `${date}T${pad(Math.floor(s / 60))}:${pad(s % 60)}`,
-      ends_at: `${date}T${pad(Math.floor(e / 60))}:${pad(e % 60)}`,
-    });
+    slots.push({ starts_at: stampAt(date, s), ends_at: stampAt(date, s + slotMinutes) });
   }
   return slots;
 }

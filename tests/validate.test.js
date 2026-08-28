@@ -61,6 +61,14 @@ test('validateGenerateInput prüft Zeitfenster, Länge und Kapazität', () => {
   assert.equal(validateGenerateInput({ area_id: '2', date: '2026-09-25', from: '08:00', to: '10:00', slot_minutes: '45', capacity: '3' }).ok, false);
 });
 
+test('validateGenerateInput erlaubt Über-Mitternacht (Bis vor Von), aber nicht Bis == Von', () => {
+  const base = { area_id: '2', date: '2026-09-25', slot_minutes: '60', capacity: '3' };
+  assert.equal(validateGenerateInput({ ...base, from: '22:00', to: '02:00' }).ok, true);
+  const equal = validateGenerateInput({ ...base, from: '10:00', to: '10:00' });
+  assert.equal(equal.ok, false);
+  assert.match(equal.errors.join(' '), /gleich/);
+});
+
 test('validateGenerateInput erlaubt nur volle/halbe Stunden für von/bis', () => {
   const base = { area_id: '2', date: '2026-09-25', slot_minutes: '30', capacity: '3' };
   assert.equal(validateGenerateInput({ ...base, from: '08:00', to: '10:30' }).ok, true);

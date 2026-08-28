@@ -59,7 +59,9 @@ export function validateGenerateInput(body) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) errors.push('Datum ist erforderlich.');
   if (!/^\d{2}:\d{2}$/.test(from)) errors.push('Startzeit ist erforderlich.');
   if (!/^\d{2}:\d{2}$/.test(to)) errors.push('Endzeit ist erforderlich.');
-  if (from && to && to <= from) errors.push('Ende muss nach dem Start liegen.');
+  // Bis < Von ist erlaubt und bedeutet "über Mitternacht" (Folgetag);
+  // nur Bis == Von ist mehrdeutig und wird abgelehnt.
+  if (from && to && to === from) errors.push('Start und Ende dürfen nicht gleich sein.');
   const onHalfHour = (t) => /^\d{2}:(00|30)$/.test(t);
   if ((from && !onHalfHour(from)) || (to && !onHalfHour(to))) {
     errors.push('Zeiten müssen zur vollen oder halben Stunde liegen (:00 oder :30).');
