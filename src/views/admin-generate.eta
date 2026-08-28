@@ -20,8 +20,8 @@
     </label>
     <label>Titel (optional) <input name="title" value="<%= it.values.title || '' %>"></label>
     <label>Datum <input type="date" name="date" value="<%= it.values.date || '' %>" required></label>
-    <label>Von <input type="time" name="from" value="<%= it.values.from || '' %>" required></label>
-    <label>Bis <input type="time" name="to" value="<%= it.values.to || '' %>" required></label>
+    <label>Von <input type="time" name="from" value="<%= it.values.from || '' %>" step="1800" required></label>
+    <label>Bis <input type="time" name="to" value="<%= it.values.to || '' %>" step="1800" required></label>
     <label>Schichtlänge
       <select name="slot_minutes">
         <% ;[30,60,90,120].forEach(function(m){ %>

@@ -60,6 +60,10 @@ export function validateGenerateInput(body) {
   if (!/^\d{2}:\d{2}$/.test(from)) errors.push('Startzeit ist erforderlich.');
   if (!/^\d{2}:\d{2}$/.test(to)) errors.push('Endzeit ist erforderlich.');
   if (from && to && to <= from) errors.push('Ende muss nach dem Start liegen.');
+  const onHalfHour = (t) => /^\d{2}:(00|30)$/.test(t);
+  if ((from && !onHalfHour(from)) || (to && !onHalfHour(to))) {
+    errors.push('Zeiten müssen zur vollen oder halben Stunde liegen (:00 oder :30).');
+  }
   if (!ALLOWED_SLOTS.includes(slotMinutes)) errors.push('Schichtlänge muss 30, 60, 90 oder 120 Minuten sein.');
   if (!Number.isInteger(capacity) || capacity < 1) errors.push('Plätze müssen mindestens 1 sein.');
   if (errors.length) return { ok: false, errors };
