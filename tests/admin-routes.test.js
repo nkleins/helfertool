@@ -110,6 +110,40 @@ test('admin adds and removes a signup on a shift', async () => {
   await app.close();
 });
 
+test('admin edits a signup name/phone/note', async () => {
+  const { app, db, cookie, csrf } = await adminSession();
+  const area_id = seedArea(db);
+  const id = createShift(db, { area_id, title: 'x', starts_at: '2026-09-25T18:00',
+    ends_at: '2026-09-25T20:00', capacity: 2, notes: null });
+  db.prepare('INSERT INTO signups (shift_id,name,phone,note,created_at) VALUES (?,?,?,?,?)')
+    .run(id, 'Alt', '0170', 'x', '2026-01-01T00:00');
+  const sid = db.prepare('SELECT id FROM signups LIMIT 1').get().id;
+  const res = await app.inject({ method: 'POST', url: `/admin/signups/${sid}`,
+    headers: { cookie }, payload: { csrf, shift_id: String(id), name: 'Neu', phone: '0171', note: 'vegan' } });
+  assert.equal(res.statusCode, 302);
+  const row = db.prepare('SELECT name,phone,note FROM signups WHERE id = ?').get(sid);
+  assert.equal(row.name, 'Neu');
+  assert.equal(row.phone, '0171');
+  assert.equal(row.note, 'vegan');
+  await app.close();
+});
+
+test('editing a signup with empty name shows an error and keeps old value', async () => {
+  const { app, db, cookie, csrf } = await adminSession();
+  const area_id = seedArea(db);
+  const id = createShift(db, { area_id, title: 'x', starts_at: '2026-09-25T18:00',
+    ends_at: '2026-09-25T20:00', capacity: 2, notes: null });
+  db.prepare('INSERT INTO signups (shift_id,name,created_at) VALUES (?,?,?)')
+    .run(id, 'Alt', '2026-01-01T00:00');
+  const sid = db.prepare('SELECT id FROM signups LIMIT 1').get().id;
+  const res = await app.inject({ method: 'POST', url: `/admin/signups/${sid}`,
+    headers: { cookie }, payload: { csrf, shift_id: String(id), name: '', phone: '', note: '' } });
+  assert.equal(res.statusCode, 200);
+  assert.match(res.body, /erforderlich/);
+  assert.equal(db.prepare('SELECT name FROM signups WHERE id = ?').get(sid).name, 'Alt');
+  await app.close();
+});
+
 test('admin detail page shows signups', async () => {
   const { app, db } = await makeApp({ adminPasswordHash: hashPassword('geheim') });
   const { cookie } = await login(app, db);

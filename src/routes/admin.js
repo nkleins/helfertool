@@ -2,7 +2,7 @@ import QRCode from 'qrcode';
 import { verifyPassword, createSession, deleteSession } from '../auth.js';
 import { requireCsrf, rateLimiter } from '../server.js';
 import { getShift, updateShift, deleteShift, listShifts, generateShifts, planSlots, areaStats, deleteShiftsByAreaDay } from '../repositories/shifts.js';
-import { listSignupsByShift, createSignup, deleteSignup, moveSignup, listAllSignups } from '../repositories/signups.js';
+import { listSignupsByShift, createSignup, deleteSignup, updateSignup, listAllSignups } from '../repositories/signups.js';
 import { validateShiftInput, validateSignupInput, validateAreaInput, validateGenerateInput } from '../validate.js';
 import { listAreas, createArea, getArea, updateArea, deleteArea } from '../repositories/areas.js';
 import { signupsCsv } from '../csv.js';
@@ -150,9 +150,8 @@ export function registerAdminRoutes(app) {
     if (!shift) return reply.code(404).send('Schicht nicht gefunden.');
     const area = getArea(db, shift.area_id);
     const signups = listSignupsByShift(db, id);
-    const others = listShifts(db).filter((s) => s.id !== id);
     reply.type('text/html').send(app.render('admin-shift-detail', {
-      title: shift.title, shift: { ...shift, area_name: area ? area.name : '' }, signups, others, csrf: req.session.csrf, errors: [],
+      title: shift.title, shift: { ...shift, area_name: area ? area.name : '' }, signups, csrf: req.session.csrf, errors: [],
     }));
   });
 
@@ -167,9 +166,8 @@ export function registerAdminRoutes(app) {
         const shift = getShift(db, id);
         const area = getArea(db, shift.area_id);
         const signups = listSignupsByShift(db, id);
-        const others = listShifts(db).filter((s) => s.id !== id);
         return reply.code(200).type('text/html').send(app.render('admin-shift-detail', {
-          title: shift.title, shift: { ...shift, area_name: area ? area.name : '' }, signups, others, csrf: req.session.csrf,
+          title: shift.title, shift: { ...shift, area_name: area ? area.name : '' }, signups, csrf: req.session.csrf,
           errors: ['Schicht ist voll.'],
         }));
       }
@@ -184,12 +182,24 @@ export function registerAdminRoutes(app) {
     return reply.redirect(`/admin/shifts/${Number(req.body.shift_id)}`);
   });
 
-  app.post('/admin/signups/:sid/move', (req, reply) => {
+  app.post('/admin/signups/:sid', (req, reply) => {
     if (!requireAdmin(req, reply)) return;
     if (!requireCsrf(req, reply)) return;
-    const target = Number(req.body.target_shift_id);
-    moveSignup(db, Number(req.params.sid), target);
-    return reply.redirect(`/admin/shifts/${target}`);
+    const sid = Number(req.params.sid);
+    const shiftId = Number(req.body.shift_id);
+    const v = validateSignupInput(req.body);
+    if (!v.ok) {
+      const shift = getShift(db, shiftId);
+      if (!shift) return reply.redirect('/admin');
+      const area = getArea(db, shift.area_id);
+      const signups = listSignupsByShift(db, shiftId);
+      return reply.code(200).type('text/html').send(app.render('admin-shift-detail', {
+        title: shift.title, shift: { ...shift, area_name: area ? area.name : '' }, signups,
+        csrf: req.session.csrf, errors: v.errors,
+      }));
+    }
+    updateSignup(db, sid, v.value);
+    return reply.redirect(`/admin/shifts/${shiftId}`);
   });
 
   app.get('/admin/export.csv', (req, reply) => {

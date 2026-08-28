@@ -4,7 +4,7 @@ import { createDb } from '../src/db.js';
 import { createShift } from '../src/repositories/shifts.js';
 import { seedArea } from './helpers.js';
 import {
-  createSignup, listSignupsByShift, deleteSignup, moveSignup, listAllSignups,
+  createSignup, listSignupsByShift, deleteSignup, updateSignup, listAllSignups,
   listByToken, cancelOwnSignup,
 } from '../src/repositories/signups.js';
 
@@ -50,13 +50,15 @@ test('deleteSignup frees a slot', () => {
   assert.equal(createSignup(db, { shift_id: id, name: 'B' }).ok, true);
 });
 
-test('moveSignup respects capacity of target', () => {
+test('updateSignup ändert Name, Telefon und Notiz', () => {
   const db = createDb(':memory:');
-  const a = shift(db, 1);
-  const b = shift(db, 1);
-  const r = createSignup(db, { shift_id: a, name: 'A' });
-  createSignup(db, { shift_id: b, name: 'B' });
-  assert.deepEqual(moveSignup(db, r.id, b), { ok: false, reason: 'full' });
+  const id = shift(db);
+  const r = createSignup(db, { shift_id: id, name: 'Alt', phone: '0170', note: 'x' });
+  updateSignup(db, r.id, { name: 'Neu', phone: '0171', note: 'vegan' });
+  const [s] = listSignupsByShift(db, id);
+  assert.equal(s.name, 'Neu');
+  assert.equal(s.phone, '0171');
+  assert.equal(s.note, 'vegan');
 });
 
 test('listAllSignups joins shift info', () => {

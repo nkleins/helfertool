@@ -108,6 +108,15 @@ th, td { border: 1px solid var(--line); padding: .5rem; text-align: left; font-s
   background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--area-color, var(--line));
   border-radius: var(--radius); padding: .7rem .8rem; }
 .mine-time { color: var(--muted); font-size: .88rem; }
+.mine-name { color: var(--muted); font-size: .85rem; margin-top: .15rem; }
+
+/* Admin: eingetragene Helfer:innen bearbeiten */
+.signups-list { list-style: none; padding: 0; margin: .5rem 0; display: grid; gap: .5rem; }
+.signup-row {
+  display: flex; flex-wrap: wrap; gap: .5rem; align-items: center;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: .6rem;
+}
+.signup-row .signup-form { flex: 1 1 auto; margin-top: 0; }
 
 .qr-page { text-align: center; }
 .qr-img { max-width: 320px; width: 100%; height: auto; background: #fff; padding: .5rem; border-radius: 8px; }

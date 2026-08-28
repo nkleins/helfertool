@@ -39,23 +39,9 @@ export function deleteSignup(db, id) {
   db.prepare('DELETE FROM signups WHERE id = ?').run(id);
 }
 
-export function moveSignup(db, id, newShiftId) {
-  db.exec('BEGIN IMMEDIATE');
-  try {
-    const signup = db.prepare('SELECT id FROM signups WHERE id = ?').get(id);
-    if (!signup) { db.exec('ROLLBACK'); return { ok: false, reason: 'no_signup' }; }
-    const shift = db.prepare('SELECT capacity FROM shifts WHERE id = ?').get(newShiftId);
-    if (!shift) { db.exec('ROLLBACK'); return { ok: false, reason: 'no_shift' }; }
-    if (countSignups(db, newShiftId) >= shift.capacity) {
-      db.exec('ROLLBACK'); return { ok: false, reason: 'full' };
-    }
-    db.prepare('UPDATE signups SET shift_id = ? WHERE id = ?').run(newShiftId, id);
-    db.exec('COMMIT');
-    return { ok: true };
-  } catch (err) {
-    db.exec('ROLLBACK');
-    throw err;
-  }
+export function updateSignup(db, id, { name, phone = null, note = null }) {
+  db.prepare('UPDATE signups SET name=?, phone=?, note=? WHERE id=?')
+    .run(name, phone, note, id);
 }
 
 export function listAllSignups(db) {

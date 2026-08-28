@@ -16,6 +16,7 @@
             <span class="dot" style="background:<%= s.area_color %>"></span>
             <strong><%= s.area_name %></strong><% if (s.title) { %> · <%= s.title %><% } %>
             <div class="mine-time"><%= s.dayLabel %>, <%= s.time %></div>
+            <div class="mine-name">Eingetragen als: <strong><%= s.name %></strong></div>
           </div>
           <form method="post" action="/signup/<%= s.signup_id %>/cancel" class="inline"
                 onsubmit="return confirm('Von dieser Schicht abmelden?')">

@@ -24,6 +24,7 @@ test('Eintragen → /meine zeigt eigene Schicht; Abmelden entfernt sie', async (
   const mine = await app.inject({ method: 'GET', url: '/meine', headers: { cookie: full } });
   assert.match(mine.body, /Frühdienst/);
   assert.match(mine.body, /Küche/);
+  assert.match(mine.body, /Anna Meyer/); // Name, mit dem man sich eingetragen hat
   const sid = db.prepare('SELECT id FROM signups LIMIT 1').get().id;
   const cancel = await app.inject({ method: 'POST', url: `/signup/${sid}/cancel`, headers: { cookie: full }, payload: { csrf } });
   assert.equal(cancel.statusCode, 302);
