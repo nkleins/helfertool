@@ -110,6 +110,17 @@ test('admin adds and removes a signup on a shift', async () => {
   await app.close();
 });
 
+test('generator time selects only offer half-hour options', async () => {
+  const { app, db, cookie } = await adminSession();
+  seedArea(db, { name: 'Küche' });
+  const res = await app.inject({ method: 'GET', url: '/admin/shifts/new', headers: { cookie } });
+  assert.equal(res.statusCode, 200);
+  assert.match(res.body, /<option value="08:30"/);
+  assert.match(res.body, /<option value="23:30"/);
+  assert.doesNotMatch(res.body, /<option value="08:15"/);
+  await app.close();
+});
+
 test('admin edits a signup name/phone/note', async () => {
   const { app, db, cookie, csrf } = await adminSession();
   const area_id = seedArea(db);

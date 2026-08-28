@@ -20,8 +20,30 @@
     </label>
     <label>Titel (optional) <input name="title" value="<%= it.values.title || '' %>"></label>
     <label>Datum <input type="date" name="date" value="<%= it.values.date || '' %>" required></label>
-    <label>Von <input type="time" name="from" value="<%= it.values.from || '' %>" step="1800" required></label>
-    <label>Bis <input type="time" name="to" value="<%= it.values.to || '' %>" step="1800" required></label>
+    <%
+      var halfHours = [];
+      for (var h = 0; h < 24; h++) {
+        for (var mm = 0; mm < 60; mm += 30) {
+          halfHours.push(('0' + h).slice(-2) + ':' + ('0' + mm).slice(-2));
+        }
+      }
+    %>
+    <label>Von
+      <select name="from" required>
+        <option value="">–</option>
+        <% halfHours.forEach(function(t){ %>
+          <option value="<%= t %>" <%= t === it.values.from ? 'selected' : '' %>><%= t %></option>
+        <% }) %>
+      </select>
+    </label>
+    <label>Bis
+      <select name="to" required>
+        <option value="">–</option>
+        <% halfHours.forEach(function(t){ %>
+          <option value="<%= t %>" <%= t === it.values.to ? 'selected' : '' %>><%= t %></option>
+        <% }) %>
+      </select>
+    </label>
     <label>Schichtlänge
       <select name="slot_minutes">
         <% ;[30,60,90,120].forEach(function(m){ %>
