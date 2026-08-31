@@ -26,5 +26,9 @@
         </li>
       <% }) %>
     </ul>
+    <p class="hint">Deine Anmeldungen werden im Cookie dieses Geräts gespeichert und können
+      nur auf dem Gerät angezeigt werden, mit dem du dich eingetragen hast. Möchtest du eine
+      Schicht abmelden, die hier nicht auftaucht, melde dich bei einer Person vom
+      Kölnvention-Team – die können auch Angaben an Schichten in der Liste ändern.</p>
   <% } %>
 </div>
