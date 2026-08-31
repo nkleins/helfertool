@@ -37,6 +37,21 @@ test('Orga-Schichten erscheinen nur auf /orga, nicht auf /', async () => {
   await app.close();
 });
 
+test('Bereiche ohne passende Schicht werden je Board ausgeblendet', async () => {
+  const { app, db } = await makeApp();
+  const kueche = seedArea(db, { name: 'Küche', sort_order: 1 });
+  const orgaBereich = seedArea(db, { name: 'Orgabüro', sort_order: 2 });
+  createShift(db, { area_id: kueche, title: null, starts_at: '2026-09-25T08:00', ends_at: '2026-09-25T09:00', capacity: 1, notes: null, is_orga: 0 });
+  createShift(db, { area_id: orgaBereich, title: null, starts_at: '2026-09-25T10:00', ends_at: '2026-09-25T11:00', capacity: 1, notes: null, is_orga: 1 });
+  const home = await app.inject({ method: 'GET', url: '/' });
+  assert.match(home.body, /Küche/);
+  assert.doesNotMatch(home.body, /Orgabüro/); // hat nur Orga-Schichten
+  const orga = await app.inject({ method: 'GET', url: '/orga' });
+  assert.match(orga.body, /Orgabüro/);
+  assert.doesNotMatch(orga.body, /Küche/); // hat nur normale Schichten
+  await app.close();
+});
+
 test('/orga zeigt Telefonnummer, / nicht', async () => {
   const { app, db } = await makeApp();
   const area_id = seedArea(db, { name: 'Küche' });

@@ -27,7 +27,8 @@ function buildAreaGroups(db, orga) {
       })),
     });
   }
-  return [...byArea.values()];
+  // Bereiche ohne passende Schicht (kein Tab-Inhalt) ausblenden.
+  return [...byArea.values()].filter((g) => g.shifts.length > 0);
 }
 
 function render(app, req, extra = {}) {

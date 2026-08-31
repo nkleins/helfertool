@@ -11,6 +11,12 @@
   <% } else { %>
   <form method="post" action="/admin/shifts/generate" class="shift-form">
     <input type="hidden" name="csrf" value="<%= it.csrf %>">
+    <div class="orga-toggle <%= it.values.is_orga ? 'is-on' : '' %>">
+      <label class="checkbox">
+        <input type="checkbox" name="is_orga" value="1" <%= it.values.is_orga ? 'checked' : '' %>>
+        <span><strong>Orgaschicht</strong> — erscheint getrennt unter <code>/orga</code> (mit Telefonnummer), nicht im normalen Plan.</span>
+      </label>
+    </div>
     <label>Bereich
       <select name="area_id" required>
         <% it.areas.forEach(function(a){ %>
@@ -53,7 +59,6 @@
       </select>
     </label>
     <label>Plätze pro Schicht <input type="number" min="1" name="capacity" value="<%= it.values.capacity || 2 %>" required></label>
-    <label class="checkbox"><input type="checkbox" name="is_orga" value="1" <%= it.values.is_orga ? 'checked' : '' %>> Orgaschicht (getrennt unter /orga, mit Telefonnummer)</label>
     <label>Notiz (optional, an alle) <input name="notes" value="<%= it.values.notes || '' %>"></label>
     <button type="submit">Schichten erzeugen</button>
     <a href="/admin">Abbrechen</a>
