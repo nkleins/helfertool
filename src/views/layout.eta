@@ -10,7 +10,7 @@
   <header class="site-header">
     <img src="/assets/Logo_weiss-1_2.png" alt="Kölnvention e.V." class="logo"
          onerror="this.style.display='none'">
-    <h1>Helfer:innen · Kölnvention</h1>
+    <h1>Arbeitsbeschaffungsmaßnahmen · Kölnvention</h1>
     <p class="motto">Juggling's not dead · 25.–27.09.26</p>
   </header>
   <main><%~ it.body %></main>

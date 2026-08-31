@@ -2,8 +2,14 @@
   <div class="errors"><% it.errors.forEach(function(e){ %><p><%= e %></p><% }) %></div>
 <% } %>
 
-<p class="intro">Trag dich für eine Schicht ein. Nur dein Vorname ist Pflicht.
-  <a href="/meine">Meine Schichten →</a></p>
+<% if (it.orga) { %>
+  <p class="intro">Orga-Schichten. Voller Name &amp; Telefon sind hier für die Koordination sichtbar.
+    <a href="/meine">Meine Schichten →</a></p>
+<% } else { %>
+  <p class="intro">Trag dich für eine Schicht ein. Nur dein Vorname ist Pflicht.
+    <a href="/meine">Meine Schichten →</a></p>
+  <p class="hint">Telefonnummer optional für Erreichbarkeit (ist versteckt, sieht nur die Orga).</p>
+<% } %>
 
 <% if (!it.areas.length) { %>
   <p>Aktuell sind keine Bereiche/Schichten ausgeschrieben.</p>
@@ -29,12 +35,12 @@
             <% if (s.free > 0) { %><span class="free-badge"><%= s.free %> von <%= s.capacity %> frei</span>
             <% } else { %><span class="full-badge">Voll</span><% } %>
           </div>
-          <% if (s.names.length) { %>
-            <ul class="names"><% s.names.forEach(function(n){ %><li><%= n %></li><% }) %></ul>
+          <% if (s.people.length) { %>
+            <ul class="names"><% s.people.forEach(function(p){ %><li><%= p.display %><% if (p.phone) { %> <span class="phone">· <%= p.phone %></span><% } %></li><% }) %></ul>
           <% } %>
           <% if (s.notes) { %><p class="notes"><%= s.notes %></p><% } %>
           <% if (s.free > 0) { %>
-            <form method="post" action="/signup" class="signup-form">
+            <form method="post" action="<%= it.action %>" class="signup-form">
               <input type="hidden" name="csrf" value="<%= it.csrf %>">
               <input type="hidden" name="shift_id" value="<%= s.id %>">
               <input type="text" name="name" placeholder="Dein Vorname" required maxlength="500">

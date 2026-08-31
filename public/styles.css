@@ -117,6 +117,10 @@ th, td { border: 1px solid var(--line); padding: .5rem; text-align: left; font-s
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: .6rem;
 }
 .signup-row .signup-form { flex: 1 1 auto; margin-top: 0; }
+.names .phone { color: var(--muted); }
+.orga-badge { background: var(--accent); color: #06110c; padding: .05rem .45rem; border-radius: 999px; font-size: .72rem; font-weight: 700; }
+.shift-form label.checkbox { display: flex; flex-direction: row; align-items: center; gap: .5rem; }
+.shift-form label.checkbox input { width: auto; }
 
 .qr-page { text-align: center; }
 .qr-img { max-width: 320px; width: 100%; height: auto; background: #fff; padding: .5rem; border-radius: 8px; }

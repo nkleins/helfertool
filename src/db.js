@@ -83,10 +83,15 @@ export function initSchema(db) {
         starts_at TEXT NOT NULL,
         ends_at   TEXT NOT NULL,
         capacity  INTEGER NOT NULL,
-        notes     TEXT
+        notes     TEXT,
+        is_orga   INTEGER NOT NULL DEFAULT 0
       );`);
   } else if (!shiftCols.includes('area_id')) {
     migrateShiftsToAreaId(db);
+  }
+
+  if (!columnNames(db, 'shifts').includes('is_orga')) {
+    db.exec('ALTER TABLE shifts ADD COLUMN is_orga INTEGER NOT NULL DEFAULT 0;');
   }
 
   if (!columnNames(db, 'signups').includes('device_token')) {

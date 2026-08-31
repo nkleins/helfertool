@@ -49,6 +49,14 @@ test('planSlots über Mitternacht rollt auch Monats-/Jahresgrenze korrekt', () =
   ]);
 });
 
+test('generateShifts markiert Orga-Schichten via is_orga', () => {
+  const db = createDb(':memory:');
+  const area_id = seedArea(db);
+  generateShifts(db, { area_id, title: null, date: '2026-09-25', from: '08:00', to: '09:00', slotMinutes: 60, capacity: 1, notes: null, is_orga: 1 });
+  const [s] = listShifts(db);
+  assert.equal(s.is_orga, 1);
+});
+
 test('generateShifts legt alle Schichten mit Kapazität an', () => {
   const db = createDb(':memory:');
   const area_id = seedArea(db);

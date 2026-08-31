@@ -23,6 +23,40 @@ test('GET / zeigt Bereichs-Tab und Schicht', async () => {
   await app.close();
 });
 
+test('Orga-Schichten erscheinen nur auf /orga, nicht auf /', async () => {
+  const { app, db } = await makeApp();
+  const area_id = seedArea(db, { name: 'Küche' });
+  createShift(db, { area_id, title: 'Helferdienst', starts_at: '2026-09-25T08:00', ends_at: '2026-09-25T09:00', capacity: 2, notes: null, is_orga: 0 });
+  createShift(db, { area_id, title: 'Orgatreffen', starts_at: '2026-09-25T10:00', ends_at: '2026-09-25T11:00', capacity: 2, notes: null, is_orga: 1 });
+  const home = await app.inject({ method: 'GET', url: '/' });
+  assert.match(home.body, /Helferdienst/);
+  assert.doesNotMatch(home.body, /Orgatreffen/);
+  const orga = await app.inject({ method: 'GET', url: '/orga' });
+  assert.match(orga.body, /Orgatreffen/);
+  assert.doesNotMatch(orga.body, /Helferdienst/);
+  await app.close();
+});
+
+test('/orga zeigt Telefonnummer, / nicht', async () => {
+  const { app, db } = await makeApp();
+  const area_id = seedArea(db, { name: 'Küche' });
+  const helferId = createShift(db, { area_id, title: 'Helferdienst', starts_at: '2026-09-25T08:00', ends_at: '2026-09-25T09:00', capacity: 2, notes: null, is_orga: 0 });
+  const orgaId = createShift(db, { area_id, title: 'Orgatreffen', starts_at: '2026-09-25T10:00', ends_at: '2026-09-25T11:00', capacity: 2, notes: null, is_orga: 1 });
+  const cookie = await sessionCookie(app);
+  const csrf = csrfFromDb(db);
+  await app.inject({ method: 'POST', url: '/signup', headers: { cookie },
+    payload: { csrf, shift_id: String(helferId), name: 'Anna Schmidt', phone: '0170111', note: '' } });
+  await app.inject({ method: 'POST', url: '/orga/signup', headers: { cookie },
+    payload: { csrf, shift_id: String(orgaId), name: 'Bea Krug', phone: '0170222', note: '' } });
+  const home = await app.inject({ method: 'GET', url: '/' });
+  assert.doesNotMatch(home.body, /0170111/); // Telefon auf / versteckt
+  assert.match(home.body, /Anna S\./);
+  const orga = await app.inject({ method: 'GET', url: '/orga' });
+  assert.match(orga.body, /0170222/); // Telefon auf /orga sichtbar
+  assert.match(orga.body, /Bea Krug/); // voller Name auf /orga
+  await app.close();
+});
+
 test('POST /signup setzt htoken-Cookie und zeigt Namen gekürzt', async () => {
   const { app, db } = await makeApp();
   const area_id = seedArea(db);
