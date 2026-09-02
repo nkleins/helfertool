@@ -42,7 +42,7 @@ export function validateShiftInput(body) {
   if (starts_at && ends_at && ends_at <= starts_at) errors.push('Ende muss nach dem Start liegen.');
   if (errors.length) return { ok: false, errors };
 
-  return { ok: true, value: { area_id, title: title === '' ? null : title.slice(0, MAX), starts_at, ends_at, capacity, notes: orNull(body.notes), is_orga: body.is_orga ? 1 : 0 } };
+  return { ok: true, value: { area_id, title: title === '' ? null : title.slice(0, MAX), starts_at, ends_at, capacity, notes: orNull(body.notes), is_orga: body.is_orga ? 1 : 0, requires_phone: body.requires_phone ? 1 : 0 } };
 }
 
 export function validateGenerateInput(body) {
@@ -70,5 +70,5 @@ export function validateGenerateInput(body) {
   if (!Number.isInteger(capacity) || capacity < 1) errors.push('Plätze müssen mindestens 1 sein.');
   if (errors.length) return { ok: false, errors };
 
-  return { ok: true, value: { area_id, title: title === '' ? null : title.slice(0, MAX), date, from, to, slotMinutes, capacity, notes: orNull(body.notes), is_orga: body.is_orga ? 1 : 0 } };
+  return { ok: true, value: { area_id, title: title === '' ? null : title.slice(0, MAX), date, from, to, slotMinutes, capacity, notes: orNull(body.notes), is_orga: body.is_orga ? 1 : 0, requires_phone: body.requires_phone ? 1 : 0 } };
 }

@@ -59,6 +59,7 @@
       </select>
     </label>
     <label>Plätze pro Schicht <input type="number" min="1" name="capacity" value="<%= it.values.capacity || 2 %>" required></label>
+    <label class="checkbox"><input type="checkbox" name="requires_phone" value="1" <%= it.values.requires_phone ? 'checked' : '' %>> Telefonnummer ist bei dieser Schicht Pflicht</label>
     <label>Notiz (optional, an alle) <input name="notes" value="<%= it.values.notes || '' %>"></label>
     <button type="submit">Schichten erzeugen</button>
     <a href="/admin">Abbrechen</a>

@@ -84,14 +84,19 @@ export function initSchema(db) {
         ends_at   TEXT NOT NULL,
         capacity  INTEGER NOT NULL,
         notes     TEXT,
-        is_orga   INTEGER NOT NULL DEFAULT 0
+        is_orga   INTEGER NOT NULL DEFAULT 0,
+        requires_phone INTEGER NOT NULL DEFAULT 0
       );`);
   } else if (!shiftCols.includes('area_id')) {
     migrateShiftsToAreaId(db);
   }
 
+  // Additive Migrationen (verlieren keine bestehenden Schichten/Anmeldungen).
   if (!columnNames(db, 'shifts').includes('is_orga')) {
     db.exec('ALTER TABLE shifts ADD COLUMN is_orga INTEGER NOT NULL DEFAULT 0;');
+  }
+  if (!columnNames(db, 'shifts').includes('requires_phone')) {
+    db.exec('ALTER TABLE shifts ADD COLUMN requires_phone INTEGER NOT NULL DEFAULT 0;');
   }
 
   if (!columnNames(db, 'signups').includes('device_token')) {

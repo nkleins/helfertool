@@ -67,7 +67,7 @@ export function registerAdminRoutes(app) {
         const g = { area_id: s.area_id, area_name: s.area_name, area_color: s.area_color, day, dayLabel: formatDay(s.starts_at), items: [] };
         index.set(key, g); groups.push(g);
       }
-      index.get(key).items.push({ ...s, time: `${formatTime(s.starts_at)}–${formatTime(s.ends_at)}` });
+      index.get(key).items.push({ ...s, time: `${formatTime(s.starts_at)}–${formatTime(s.ends_at)}`, people: listSignupsByShift(db, s.id) });
     }
     reply.type('text/html').send(app.render('admin-dashboard', {
       title: 'Dashboard', stats: areaStats(db), groups, csrf: req.session.csrf,

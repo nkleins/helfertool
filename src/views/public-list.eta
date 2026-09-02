@@ -34,6 +34,7 @@
           <div class="slot-status">
             <% if (s.free > 0) { %><span class="free-badge"><%= s.free %> von <%= s.capacity %> frei</span>
             <% } else { %><span class="full-badge">Voll</span><% } %>
+            <% if (s.requires_phone) { %><span class="req-phone">Telefon erforderlich</span><% } %>
           </div>
           <% if (s.people.length) { %>
             <ul class="names"><% s.people.forEach(function(p){ %><li><%= p.display %><% if (p.phone) { %> <span class="phone">· <%= p.phone %></span><% } %></li><% }) %></ul>
@@ -44,7 +45,11 @@
               <input type="hidden" name="csrf" value="<%= it.csrf %>">
               <input type="hidden" name="shift_id" value="<%= s.id %>">
               <input type="text" name="name" placeholder="Dein Vorname" required maxlength="500">
-              <input type="tel" name="phone" placeholder="Telefon (optional)" maxlength="500">
+              <% if (s.requires_phone) { %>
+                <input type="tel" name="phone" placeholder="Telefon (Pflicht)" required maxlength="500">
+              <% } else { %>
+                <input type="tel" name="phone" placeholder="Telefon (optional)" maxlength="500">
+              <% } %>
               <button type="submit">Eintragen</button>
             </form>
           <% } %>

@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { listShifts } from '../repositories/shifts.js';
+import { listShifts, getShift } from '../repositories/shifts.js';
 import { listAreas } from '../repositories/areas.js';
 import { createSignup, listSignupsByShift, listByToken, cancelOwnSignup } from '../repositories/signups.js';
 import { validateSignupInput } from '../validate.js';
@@ -54,6 +54,12 @@ export function registerPublicRoutes(app) {
     const shiftId = Number.parseInt(req.body.shift_id, 10);
     if (!result.ok) {
       return reply.code(200).type('text/html').send(render(app, req, { orga, errors: result.errors, values: req.body }));
+    }
+    const shift = getShift(db, shiftId);
+    if (shift && shift.requires_phone && !result.value.phone) {
+      return reply.code(200).type('text/html').send(render(app, req, {
+        orga, errors: ['Für diese Schicht ist die Telefonnummer Pflicht.'], values: req.body,
+      }));
     }
     let token = req.cookies?.htoken;
     if (!token) {

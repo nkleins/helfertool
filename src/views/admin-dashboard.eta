@@ -38,13 +38,18 @@
         </form>
       </div>
       <table>
-        <thead><tr><th>Zeit</th><th>Titel</th><th>Belegt</th><th></th></tr></thead>
+        <thead><tr><th>Zeit</th><th>Titel</th><th>Belegt</th><th>Eingetragen</th><th></th></tr></thead>
         <tbody>
         <% g.items.forEach(function(s){ %>
           <tr class="<%= s.free <= 0 ? 'row-full' : (s.taken > 0 ? 'row-part' : 'row-empty') %>">
             <td><%= s.time %></td>
-            <td><%= s.title || '—' %><% if (s.is_orga) { %> <span class="orga-badge">Orga</span><% } %></td>
+            <td><%= s.title || '—' %><% if (s.is_orga) { %> <span class="orga-badge">Orga</span><% } %><% if (s.requires_phone) { %> <span class="req-badge">Tel-Pflicht</span><% } %></td>
             <td><%= s.taken %>/<%= s.capacity %></td>
+            <td>
+              <% if (s.people.length) { %>
+                <ul class="who"><% s.people.forEach(function(p){ %><li><%= p.name %><% if (p.phone) { %> <span class="phone">· <%= p.phone %></span><% } %></li><% }) %></ul>
+              <% } else { %>–<% } %>
+            </td>
             <td><a href="/admin/shifts/<%= s.id %>">Details</a> · <a href="/admin/shifts/<%= s.id %>/edit">Bearb.</a></td>
           </tr>
         <% }) %>

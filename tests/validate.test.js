@@ -56,7 +56,7 @@ test('validateShiftInput lehnt fehlenden Bereich und Ende<=Start ab', () => {
 test('validateGenerateInput prüft Zeitfenster, Länge und Kapazität', () => {
   const v = validateGenerateInput({ area_id: '2', title: 'Frühdienst', date: '2026-09-25', from: '08:00', to: '10:00', slot_minutes: '30', capacity: '3' });
   assert.equal(v.ok, true);
-  assert.deepEqual(v.value, { area_id: 2, title: 'Frühdienst', date: '2026-09-25', from: '08:00', to: '10:00', slotMinutes: 30, capacity: 3, notes: null, is_orga: 0 });
+  assert.deepEqual(v.value, { area_id: 2, title: 'Frühdienst', date: '2026-09-25', from: '08:00', to: '10:00', slotMinutes: 30, capacity: 3, notes: null, is_orga: 0, requires_phone: 0 });
   assert.equal(validateGenerateInput({ area_id: '2', date: '2026-09-25', from: '10:00', to: '10:00', slot_minutes: '30', capacity: '3' }).ok, false);
   assert.equal(validateGenerateInput({ area_id: '2', date: '2026-09-25', from: '08:00', to: '10:00', slot_minutes: '45', capacity: '3' }).ok, false);
 });
@@ -65,6 +65,12 @@ test('validateGenerateInput übernimmt is_orga aus der Checkbox', () => {
   const base = { area_id: '2', date: '2026-09-25', from: '08:00', to: '10:00', slot_minutes: '60', capacity: '2' };
   assert.equal(validateGenerateInput(base).value.is_orga, 0);
   assert.equal(validateGenerateInput({ ...base, is_orga: '1' }).value.is_orga, 1);
+});
+
+test('validateGenerateInput übernimmt requires_phone aus der Checkbox', () => {
+  const base = { area_id: '2', date: '2026-09-25', from: '08:00', to: '10:00', slot_minutes: '60', capacity: '2' };
+  assert.equal(validateGenerateInput(base).value.requires_phone, 0);
+  assert.equal(validateGenerateInput({ ...base, requires_phone: '1' }).value.requires_phone, 1);
 });
 
 test('validateGenerateInput erlaubt Über-Mitternacht (Bis vor Von), aber nicht Bis == Von', () => {

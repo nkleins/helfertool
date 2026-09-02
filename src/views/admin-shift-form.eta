@@ -17,6 +17,7 @@
     <label>Ende <input type="datetime-local" name="ends_at" value="<%= it.shift.ends_at %>" required></label>
     <label>Plätze <input type="number" min="1" name="capacity" value="<%= it.shift.capacity %>" required></label>
     <label class="checkbox"><input type="checkbox" name="is_orga" value="1" <%= it.shift.is_orga ? 'checked' : '' %>> Orgaschicht (unter /orga, mit Telefonnummer)</label>
+    <label class="checkbox"><input type="checkbox" name="requires_phone" value="1" <%= it.shift.requires_phone ? 'checked' : '' %>> Telefonnummer Pflicht</label>
     <label>Notiz <input name="notes" value="<%= it.shift.notes || '' %>"></label>
     <button type="submit">Speichern</button>
     <a href="/admin">Abbrechen</a>

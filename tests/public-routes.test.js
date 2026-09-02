@@ -72,6 +72,33 @@ test('/orga zeigt Telefonnummer, / nicht', async () => {
   await app.close();
 });
 
+test('Schicht mit Telefon-Pflicht lehnt Anmeldung ohne Telefon ab', async () => {
+  const { app, db } = await makeApp();
+  const area_id = seedArea(db);
+  const id = createShift(db, { area_id, title: null, starts_at: '2026-09-25T18:00', ends_at: '2026-09-25T19:00', capacity: 2, notes: null, requires_phone: 1 });
+  const cookie = await sessionCookie(app);
+  const csrf = csrfFromDb(db);
+  const noPhone = await app.inject({ method: 'POST', url: '/signup',
+    headers: { cookie }, payload: { csrf, shift_id: String(id), name: 'Anna', phone: '', note: '' } });
+  assert.equal(noPhone.statusCode, 200);
+  assert.match(noPhone.body, /Telefonnummer Pflicht/);
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM signups').get().n, 0);
+  const withPhone = await app.inject({ method: 'POST', url: '/signup',
+    headers: { cookie }, payload: { csrf, shift_id: String(id), name: 'Anna', phone: '0170', note: '' } });
+  assert.equal(withPhone.statusCode, 302);
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM signups').get().n, 1);
+  await app.close();
+});
+
+test('GET / markiert Telefon-Pflicht-Schichten', async () => {
+  const { app, db } = await makeApp();
+  const area_id = seedArea(db, { name: 'Küche' });
+  createShift(db, { area_id, title: null, starts_at: '2026-09-25T18:00', ends_at: '2026-09-25T19:00', capacity: 2, notes: null, requires_phone: 1 });
+  const res = await app.inject({ method: 'GET', url: '/' });
+  assert.match(res.body, /Telefon erforderlich/);
+  await app.close();
+});
+
 test('POST /signup setzt htoken-Cookie und zeigt Namen gekürzt', async () => {
   const { app, db } = await makeApp();
   const area_id = seedArea(db);

@@ -110,6 +110,20 @@ test('admin adds and removes a signup on a shift', async () => {
   await app.close();
 });
 
+test('dashboard lists signups with name and phone before opening details', async () => {
+  const { app, db, cookie } = await adminSession();
+  const area_id = seedArea(db, { name: 'Küche' });
+  const id = createShift(db, { area_id, title: 'Frühdienst', starts_at: '2026-09-25T08:00',
+    ends_at: '2026-09-25T09:00', capacity: 2, notes: null });
+  db.prepare('INSERT INTO signups (shift_id,name,phone,created_at) VALUES (?,?,?,?)')
+    .run(id, 'Anna Schmidt', '0170123', '2026-01-01T00:00');
+  const res = await app.inject({ method: 'GET', url: '/admin', headers: { cookie } });
+  assert.equal(res.statusCode, 200);
+  assert.match(res.body, /Anna Schmidt/);
+  assert.match(res.body, /0170123/);
+  await app.close();
+});
+
 test('generator time selects only offer half-hour options', async () => {
   const { app, db, cookie } = await adminSession();
   seedArea(db, { name: 'Küche' });

@@ -1,8 +1,8 @@
-export function createShift(db, { area_id, title, starts_at, ends_at, capacity, notes, is_orga = 0 }) {
+export function createShift(db, { area_id, title, starts_at, ends_at, capacity, notes, is_orga = 0, requires_phone = 0 }) {
   const info = db
-    .prepare(`INSERT INTO shifts (area_id,title,starts_at,ends_at,capacity,notes,is_orga)
-              VALUES (?,?,?,?,?,?,?)`)
-    .run(area_id, title ?? null, starts_at, ends_at, capacity, notes ?? null, is_orga ? 1 : 0);
+    .prepare(`INSERT INTO shifts (area_id,title,starts_at,ends_at,capacity,notes,is_orga,requires_phone)
+              VALUES (?,?,?,?,?,?,?,?)`)
+    .run(area_id, title ?? null, starts_at, ends_at, capacity, notes ?? null, is_orga ? 1 : 0, requires_phone ? 1 : 0);
   return Number(info.lastInsertRowid);
 }
 
@@ -22,11 +22,11 @@ export function listShifts(db) {
     .map((s) => ({ ...s, free: Math.max(0, s.capacity - s.taken) }));
 }
 
-export function updateShift(db, id, { area_id, title, starts_at, ends_at, capacity, notes, is_orga = 0 }) {
+export function updateShift(db, id, { area_id, title, starts_at, ends_at, capacity, notes, is_orga = 0, requires_phone = 0 }) {
   db.prepare(
-    `UPDATE shifts SET area_id=?, title=?, starts_at=?, ends_at=?, capacity=?, notes=?, is_orga=?
+    `UPDATE shifts SET area_id=?, title=?, starts_at=?, ends_at=?, capacity=?, notes=?, is_orga=?, requires_phone=?
      WHERE id=?`
-  ).run(area_id, title ?? null, starts_at, ends_at, capacity, notes ?? null, is_orga ? 1 : 0, id);
+  ).run(area_id, title ?? null, starts_at, ends_at, capacity, notes ?? null, is_orga ? 1 : 0, requires_phone ? 1 : 0, id);
 }
 
 export function deleteShift(db, id) {
@@ -64,16 +64,16 @@ export function planSlots({ date, from, to, slotMinutes }) {
   return slots;
 }
 
-export function generateShifts(db, { area_id, title, date, from, to, slotMinutes, capacity, notes, is_orga = 0 }) {
+export function generateShifts(db, { area_id, title, date, from, to, slotMinutes, capacity, notes, is_orga = 0, requires_phone = 0 }) {
   const slots = planSlots({ date, from, to, slotMinutes });
   db.exec('BEGIN IMMEDIATE');
   try {
     const stmt = db.prepare(
-      `INSERT INTO shifts (area_id,title,starts_at,ends_at,capacity,notes,is_orga)
-       VALUES (?,?,?,?,?,?,?)`
+      `INSERT INTO shifts (area_id,title,starts_at,ends_at,capacity,notes,is_orga,requires_phone)
+       VALUES (?,?,?,?,?,?,?,?)`
     );
     for (const slot of slots) {
-      stmt.run(area_id, title ?? null, slot.starts_at, slot.ends_at, capacity, notes ?? null, is_orga ? 1 : 0);
+      stmt.run(area_id, title ?? null, slot.starts_at, slot.ends_at, capacity, notes ?? null, is_orga ? 1 : 0, requires_phone ? 1 : 0);
     }
     db.exec('COMMIT');
   } catch (err) {
