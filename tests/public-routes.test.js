@@ -23,6 +23,15 @@ test('GET / zeigt Bereichs-Tab und Schicht', async () => {
   await app.close();
 });
 
+test('Bereichsbeschreibung wird auf / angezeigt', async () => {
+  const { app, db } = await makeApp();
+  const area_id = seedArea(db, { name: 'Küche', description: 'Am Zelt hinten links' });
+  createShift(db, { area_id, title: null, starts_at: '2026-09-25T08:00', ends_at: '2026-09-25T09:00', capacity: 1, notes: null });
+  const res = await app.inject({ method: 'GET', url: '/' });
+  assert.match(res.body, /Am Zelt hinten links/);
+  await app.close();
+});
+
 test('Orga-Schichten erscheinen nur auf /orga, nicht auf /', async () => {
   const { app, db } = await makeApp();
   const area_id = seedArea(db, { name: 'Küche' });

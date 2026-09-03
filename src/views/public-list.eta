@@ -23,6 +23,7 @@
 
 <% it.areas.forEach(function(a, i){ %>
   <section class="area-panel<%= i === 0 ? ' active' : '' %>" id="area-<%= a.id %>" style="--area-color:<%= a.color %>">
+    <% if (a.description) { %><p class="area-desc"><%= a.description %></p><% } %>
     <% if (!a.shifts.length) { %>
       <p class="empty">Für „<%= a.name %>" gibt es noch keine Schichten.</p>
     <% } %>

@@ -12,11 +12,12 @@
     <input name="name" placeholder="Neuer Bereich (z.B. Küche)" required maxlength="500">
     <input type="color" name="color" value="#33aa88" aria-label="Farbe">
     <input type="number" name="sort_order" value="0" aria-label="Reihenfolge" style="width:5rem">
+    <input name="description" placeholder="Beschreibung (optional)" maxlength="500">
     <button type="submit">Anlegen</button>
   </form>
 
   <table>
-    <thead><tr><th>Bereich</th><th>Farbe</th><th>Reihenfolge</th><th></th></tr></thead>
+    <thead><tr><th>Bereich</th><th>Farbe</th><th>Reihenfolge</th><th>Beschreibung</th><th></th></tr></thead>
     <tbody>
     <% it.areas.forEach(function(a){ %>
       <tr>
@@ -25,6 +26,7 @@
           <td><input name="name" value="<%= a.name %>" maxlength="500"></td>
           <td><input type="color" name="color" value="<%= a.color %>"></td>
           <td><input type="number" name="sort_order" value="<%= a.sort_order %>" style="width:5rem"></td>
+          <td><input name="description" value="<%= a.description || '' %>" maxlength="500"></td>
           <td>
             <button type="submit">Speichern</button>
           </td>

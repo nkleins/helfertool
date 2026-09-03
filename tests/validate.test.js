@@ -67,6 +67,19 @@ test('validateGenerateInput übernimmt is_orga aus der Checkbox', () => {
   assert.equal(validateGenerateInput({ ...base, is_orga: '1' }).value.is_orga, 1);
 });
 
+test('validateGenerateInput erlaubt Schichtlängen bis 8 h, lehnt Zwischenwerte ab', () => {
+  const base = { area_id: '2', date: '2026-09-25', from: '08:00', to: '10:00', capacity: '2' };
+  assert.equal(validateGenerateInput({ ...base, slot_minutes: '480' }).ok, true);
+  assert.equal(validateGenerateInput({ ...base, slot_minutes: '240' }).ok, true);
+  assert.equal(validateGenerateInput({ ...base, slot_minutes: '150' }).ok, false);
+  assert.equal(validateGenerateInput({ ...base, slot_minutes: '540' }).ok, false);
+});
+
+test('validateAreaInput übernimmt optionale Beschreibung', () => {
+  assert.equal(validateAreaInput({ name: 'Küche' }).value.description, null);
+  assert.equal(validateAreaInput({ name: 'Küche', description: 'Am Zelt hinten' }).value.description, 'Am Zelt hinten');
+});
+
 test('validateGenerateInput übernimmt requires_phone aus der Checkbox', () => {
   const base = { area_id: '2', date: '2026-09-25', from: '08:00', to: '10:00', slot_minutes: '60', capacity: '2' };
   assert.equal(validateGenerateInput(base).value.requires_phone, 0);

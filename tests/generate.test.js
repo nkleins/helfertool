@@ -57,6 +57,11 @@ test('generateShifts markiert Orga-Schichten via is_orga', () => {
   assert.equal(s.is_orga, 1);
 });
 
+test('planSlots unterstützt lange Schichten (8 h)', () => {
+  const slots = planSlots({ date: '2026-09-25', from: '08:00', to: '16:00', slotMinutes: 480 });
+  assert.deepEqual(slots, [{ starts_at: '2026-09-25T08:00', ends_at: '2026-09-25T16:00' }]);
+});
+
 test('generateShifts übernimmt requires_phone', () => {
   const db = createDb(':memory:');
   const area_id = seedArea(db);

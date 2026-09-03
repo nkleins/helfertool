@@ -53,8 +53,8 @@
     <p class="hint">Liegt „Bis" vor „Von", geht die Schicht über Mitternacht – die Zeiten nach 00:00 werden automatisch auf den Folgetag gelegt.</p>
     <label>Schichtlänge
       <select name="slot_minutes">
-        <% ;[30,60,90,120].forEach(function(m){ %>
-          <option value="<%= m %>" <%= String(m) === String(it.values.slot_minutes) ? 'selected' : '' %>><%= m %> min</option>
+        <% ;[30,60,90,120,180,240,300,360,420,480].forEach(function(m){ %>
+          <option value="<%= m %>" <%= String(m) === String(it.values.slot_minutes) ? 'selected' : '' %>><%= m %> min<%= m % 60 === 0 ? ' (' + (m/60) + ' Std.)' : '' %></option>
         <% }) %>
       </select>
     </label>

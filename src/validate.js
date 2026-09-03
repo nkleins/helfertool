@@ -11,7 +11,7 @@ export function validateSignupInput(body) {
   return { ok: true, value: { name, phone: orNull(body.phone), note: orNull(body.note) } };
 }
 
-const ALLOWED_SLOTS = [30, 60, 90, 120];
+const ALLOWED_SLOTS = [30, 60, 90, 120, 180, 240, 300, 360, 420, 480];
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
 export function validateAreaInput(body) {
@@ -24,7 +24,7 @@ export function validateAreaInput(body) {
   else if (!HEX.test(color)) errors.push('Farbe muss ein Hex-Wert wie #33aa88 sein.');
   const sort_order = Number.parseInt(body.sort_order, 10);
   if (errors.length) return { ok: false, errors };
-  return { ok: true, value: { name, color, sort_order: Number.isInteger(sort_order) ? sort_order : 0 } };
+  return { ok: true, value: { name, color, sort_order: Number.isInteger(sort_order) ? sort_order : 0, description: orNull(body.description) } };
 }
 
 export function validateShiftInput(body) {
@@ -66,7 +66,7 @@ export function validateGenerateInput(body) {
   if ((from && !onHalfHour(from)) || (to && !onHalfHour(to))) {
     errors.push('Zeiten müssen zur vollen oder halben Stunde liegen (:00 oder :30).');
   }
-  if (!ALLOWED_SLOTS.includes(slotMinutes)) errors.push('Schichtlänge muss 30, 60, 90 oder 120 Minuten sein.');
+  if (!ALLOWED_SLOTS.includes(slotMinutes)) errors.push('Ungültige Schichtlänge (30–120 min in 30er-Schritten, danach in Stunden bis 8 h).');
   if (!Number.isInteger(capacity) || capacity < 1) errors.push('Plätze müssen mindestens 1 sein.');
   if (errors.length) return { ok: false, errors };
 

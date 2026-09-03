@@ -51,10 +51,11 @@ function migrateShiftsToAreaId(db) {
 export function initSchema(db) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS areas (
-      id         INTEGER PRIMARY KEY,
-      name       TEXT NOT NULL,
-      color      TEXT NOT NULL DEFAULT '#888888',
-      sort_order INTEGER NOT NULL DEFAULT 0
+      id          INTEGER PRIMARY KEY,
+      name        TEXT NOT NULL,
+      color       TEXT NOT NULL DEFAULT '#888888',
+      sort_order  INTEGER NOT NULL DEFAULT 0,
+      description TEXT
     );
     CREATE TABLE IF NOT EXISTS sessions (
       id         TEXT PRIMARY KEY,
@@ -91,7 +92,10 @@ export function initSchema(db) {
     migrateShiftsToAreaId(db);
   }
 
-  // Additive Migrationen (verlieren keine bestehenden Schichten/Anmeldungen).
+  // Additive Migrationen (verlieren keine bestehenden Daten).
+  if (!columnNames(db, 'areas').includes('description')) {
+    db.exec('ALTER TABLE areas ADD COLUMN description TEXT;');
+  }
   if (!columnNames(db, 'shifts').includes('is_orga')) {
     db.exec('ALTER TABLE shifts ADD COLUMN is_orga INTEGER NOT NULL DEFAULT 0;');
   }

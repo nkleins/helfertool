@@ -12,6 +12,14 @@ test('createArea + listAreas sortiert nach sort_order dann name', () => {
   assert.equal(areas[0].color, '#ff8844');
 });
 
+test('createArea/updateArea speichern eine optionale Beschreibung', () => {
+  const db = createDb(':memory:');
+  const id = createArea(db, { name: 'Küche', color: '#888888', sort_order: 0, description: 'Am Zelt hinten' });
+  assert.equal(getArea(db, id).description, 'Am Zelt hinten');
+  updateArea(db, id, { name: 'Küche', color: '#888888', sort_order: 0, description: 'Neuer Text' });
+  assert.equal(getArea(db, id).description, 'Neuer Text');
+});
+
 test('updateArea ändert Name und Farbe', () => {
   const db = createDb(':memory:');
   const id = createArea(db, { name: 'Bar', color: '#888888', sort_order: 0 });
