@@ -10,6 +10,7 @@ import { Eta } from 'eta';
 import { createDb } from './db.js';
 import { getSettings, getLogo } from './repositories/settings.js';
 import { ensureOwner, getUser } from './repositories/users.js';
+import { translator, pickLang } from './i18n.js';
 import { loadConfig } from './config.js';
 import { getSession, createSession } from './auth.js';
 import { registerPublicRoutes } from './routes/public.js';
@@ -45,8 +46,10 @@ export function buildApp(config, db) {
     const brand = getSettings(db);
     const logo = getLogo(db);
     brand.logoUrl = logo ? `/logo?v=${encodeURIComponent(logo.updated_at)}` : '/logo';
-    const body = eta.render(view, { ...data, brand });
-    return eta.render('layout', { ...data, brand, body });
+    const lang = data.lang ?? 'de';
+    const t = translator(lang);
+    const body = eta.render(view, { ...data, brand, lang, t });
+    return eta.render('layout', { ...data, brand, lang, t, body });
   });
 
   // Hochgeladenes Logo aus der DB, sonst das mitgelieferte Standard-Logo.
@@ -72,6 +75,7 @@ export function buildApp(config, db) {
       });
     }
     req.session = session;
+    req.lang = pickLang(req);
     // Eingeloggt = Admin-Session mit existierendem Account (gelöschte Accounts fliegen raus).
     req.user = session.is_admin === 1 && session.user_id ? getUser(db, session.user_id) : undefined;
     req.isAdmin = Boolean(req.user);

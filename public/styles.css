@@ -187,3 +187,11 @@ fieldset.plain { border: 0; padding: 0; margin: 0; }
 .shift-form fieldset label.checkbox { display: flex; align-items: center; gap: .5rem; }
 .shift-form fieldset label.checkbox input { width: auto; }
 .area-pick { padding-left: 1.4rem; }
+
+/* Sprachumschalter */
+.site-header { position: relative; }
+.lang-switch {
+  position: absolute; top: .7rem; right: .8rem; text-decoration: none; font-weight: 700; font-size: .85rem;
+  color: var(--ink); border: 1px solid var(--line); border-radius: 999px; padding: .2rem .65rem; background: var(--surface);
+}
+.lang-switch:hover { border-color: var(--accent); }

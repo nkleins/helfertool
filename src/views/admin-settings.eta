@@ -18,13 +18,13 @@
              placeholder="z.B. Disco-Dienste">
     </label>
     <label>Name der Con / des Vereins (optional)
-      <input name="org_name" value="<%= it.values.org_name %>" maxlength="500" placeholder="z.B. Kölnvention">
+      <input name="org_name" value="<%= it.values.org_name %>" maxlength="500" placeholder="z.B. Meine Convention">
     </label>
     <label>Motto / Datum unter der Überschrift (optional)
       <input name="motto" value="<%= it.values.motto %>" maxlength="500" placeholder="z.B. 25.–27.09.26">
     </label>
     <label>Fußzeile (optional)
-      <input name="footer" value="<%= it.values.footer %>" maxlength="500" placeholder="z.B. Kölnvention e.V.">
+      <input name="footer" value="<%= it.values.footer %>" maxlength="500" placeholder="z.B. Mein Verein e.V.">
     </label>
     <label>Akzentfarbe
       <input type="color" name="accent_color" value="<%= it.values.accent_color %>">

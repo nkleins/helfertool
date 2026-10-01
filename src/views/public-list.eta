@@ -3,25 +3,25 @@
 <% } %>
 
 <% if (it.orga) { %>
-  <p class="intro">Orga-Schichten. Voller Name &amp; Telefon sind hier für die Koordination sichtbar.
-    <a href="/meine">Meine Schichten →</a></p>
+  <p class="intro"><%= it.t('intro.orga') %>
+    <a href="/meine"><%= it.t('link.mine') %></a></p>
 <% } else { %>
-  <p class="intro">Trag dich für eine Schicht ein. Nur dein Vorname ist Pflicht.
-    <a href="/meine">Meine Schichten →</a></p>
-  <p class="hint">Telefonnummer optional für Erreichbarkeit (ist versteckt, sieht nur die Orga).</p>
+  <p class="intro"><%= it.t('intro.public') %>
+    <a href="/meine"><%= it.t('link.mine') %></a></p>
+  <p class="hint"><%= it.t('intro.phone') %></p>
 <% } %>
 
 <% if (!it.areas.length) { %>
-  <p>Aktuell sind keine Bereiche/Schichten ausgeschrieben.</p>
+  <p><%= it.t('list.none') %></p>
 <% } else { %>
 <div class="filters">
-  <input type="search" id="f-search" placeholder="Suchen: Schicht, Bereich oder Name …" aria-label="Suchen">
+  <input type="search" id="f-search" placeholder="<%= it.t('filter.search') %>" aria-label="<%= it.t('filter.searchLabel') %>">
   <div class="filter-row">
-    <select id="f-day" aria-label="Tag auswählen">
-      <option value="">Alle Tage</option>
+    <select id="f-day" aria-label="<%= it.t('filter.dayLabel') %>">
+      <option value=""><%= it.t('filter.allDays') %></option>
       <% it.days.forEach(function(d){ %><option value="<%= d.value %>"><%= d.label %></option><% }) %>
     </select>
-    <label class="toggle"><input type="checkbox" id="show-past"> Vergangene Schichten anzeigen</label>
+    <label class="toggle"><input type="checkbox" id="show-past"> <%= it.t('filter.showPast') %></label>
   </div>
 </div>
 
@@ -37,21 +37,21 @@
     <h3 class="panel-head"><span class="dot" style="background:<%= a.color %>"></span> <%= a.name %></h3>
     <% if (a.description) { %><p class="area-desc"><%= a.description %></p><% } %>
     <% if (!a.shifts.length) { %>
-      <p class="empty">Für „<%= a.name %>" gibt es noch keine Schichten.</p>
+      <p class="empty"><%= it.t('area.noShifts', { name: a.name }) %></p>
     <% } %>
-    <p class="empty filter-empty" hidden>Keine passenden Schichten.</p>
+    <p class="empty filter-empty" hidden><%= it.t('filter.noMatch') %></p>
     <% a.shifts.forEach(function(s){ %>
       <div class="slot <%= s.free <= 0 ? 'slot-full' : 'slot-free' %><%= s.isPast ? ' is-past' : '' %>"
            data-day="<%= s.day %>"
            data-search="<%= [a.name, s.title || '', s.notes || ''].concat(s.people.map(function(p){ return p.display; })).join(' ').toLowerCase() %>">
         <div class="slot-time"><span class="day"><%= s.dayLabel %></span><strong><%= s.time %></strong></div>
         <div class="slot-body">
-          <% if (s.isPast) { %><span class="past-badge">vorbei</span><% } %>
+          <% if (s.isPast) { %><span class="past-badge"><%= it.t('slot.past') %></span><% } %>
           <% if (s.title) { %><div class="slot-title"><%= s.title %></div><% } %>
           <div class="slot-status">
-            <% if (s.free > 0) { %><span class="free-badge"><%= s.free %> von <%= s.capacity %> frei</span>
-            <% } else { %><span class="full-badge">Voll</span><% } %>
-            <% if (s.requires_phone) { %><span class="req-phone">Telefon erforderlich</span><% } %>
+            <% if (s.free > 0) { %><span class="free-badge"><%= it.t('slot.free', { free: s.free, capacity: s.capacity }) %></span>
+            <% } else { %><span class="full-badge"><%= it.t('slot.full') %></span><% } %>
+            <% if (s.requires_phone) { %><span class="req-phone"><%= it.t('slot.phoneRequired') %></span><% } %>
           </div>
           <% if (s.people.length) { %>
             <ul class="names"><% s.people.forEach(function(p){ %><li><%= p.display %><% if (p.phone) { %> <span class="phone">· <%= p.phone %></span><% } %></li><% }) %></ul>
@@ -61,13 +61,13 @@
             <form method="post" action="<%= it.action %>" class="signup-form">
               <input type="hidden" name="csrf" value="<%= it.csrf %>">
               <input type="hidden" name="shift_id" value="<%= s.id %>">
-              <input type="text" name="name" placeholder="Dein Vorname" required maxlength="500">
+              <input type="text" name="name" placeholder="<%= it.t('form.firstName') %>" required maxlength="500">
               <% if (s.requires_phone) { %>
-                <input type="tel" name="phone" placeholder="Telefon (Pflicht)" required maxlength="500">
+                <input type="tel" name="phone" placeholder="<%= it.t('form.phoneRequired') %>" required maxlength="500">
               <% } else { %>
-                <input type="tel" name="phone" placeholder="Telefon (optional)" maxlength="500">
+                <input type="tel" name="phone" placeholder="<%= it.t('form.phoneOptional') %>" maxlength="500">
               <% } %>
-              <button type="submit">Eintragen</button>
+              <button type="submit"><%= it.t('form.submit') %></button>
             </form>
           <% } %>
         </div>

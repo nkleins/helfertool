@@ -5,8 +5,8 @@ import { createSignup, listSignupsByShift, listByToken, cancelOwnSignup } from '
 import { validateSignupInput } from '../validate.js';
 import { displayName, formatTime, formatDay, localNow, pastCutoff } from '../display.js';
 import { requireCsrf, rateLimiter } from '../server.js';
+import { translator, LANGS } from '../i18n.js';
 
-const WEEKDAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
 const HTOKEN_MAX_AGE = 60 * 60 * 24 * 120; // 120 Tage
 
 // orga=false: Teilnehmer-Schichten, Namen gekürzt ("Vorname N."), kein Telefon.
@@ -34,19 +34,27 @@ function buildAreaGroups(db, orga, cutoff) {
   return [...byArea.values()].filter((g) => g.shifts.length > 0);
 }
 
+// Gemeinsame Daten für alle öffentlichen Seiten (Sprache + Umschalter).
+function pub(req, data) {
+  // Nach einem POST (Formularfehler) zurück auf die passende Listen-Seite.
+  const path = req.method === 'GET' ? req.url : (req.url.startsWith('/orga') ? '/orga' : '/');
+  return { lang: req.lang, langSwitch: true, path, ...data };
+}
+
 function render(app, req, extra = {}) {
   const orga = Boolean(extra.orga);
+  const t = translator(req.lang);
   const now = app.config.now ? app.config.now() : localNow(app.config.timeZone);
   const areas = buildAreaGroups(app.db, orga, pastCutoff(now));
   const days = [...new Map(areas.flatMap((a) => a.shifts).map((s) => [s.day, s.dayLabel])).entries()]
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([value, label]) => ({ value, label: `${WEEKDAYS[new Date(`${value}T12:00Z`).getUTCDay()]} ${label}` }));
-  return app.render('public-list', {
-    title: orga ? 'Orga' : 'Helfen', orga,
+    .map(([value, label]) => ({ value, label: `${t.list('weekdays')[new Date(`${value}T12:00Z`).getUTCDay()]} ${label}` }));
+  return app.render('public-list', pub(req, {
+    title: t(orga ? 'title.orga' : 'title.help'), orga,
     areas, days, csrf: req.session.csrf,
     action: orga ? '/orga/signup' : '/signup',
     errors: [], values: {}, ...extra,
-  });
+  }));
 }
 
 export function registerPublicRoutes(app) {
@@ -60,13 +68,14 @@ export function registerPublicRoutes(app) {
     if (!requireCsrf(req, reply)) return;
     const result = validateSignupInput(req.body);
     const shiftId = Number.parseInt(req.body.shift_id, 10);
+    const t = translator(req.lang);
     if (!result.ok) {
-      return reply.code(200).type('text/html').send(render(app, req, { orga, errors: result.errors, values: req.body }));
+      return reply.code(200).type('text/html').send(render(app, req, { orga, errors: result.errors.map(t.message), values: req.body }));
     }
     const shift = getShift(db, shiftId);
     if (shift && shift.requires_phone && !result.value.phone) {
       return reply.code(200).type('text/html').send(render(app, req, {
-        orga, errors: ['Für diese Schicht ist die Telefonnummer Pflicht.'], values: req.body,
+        orga, errors: [t('err.phoneRequired')], values: req.body,
       }));
     }
     let token = req.cookies?.htoken;
@@ -78,7 +87,7 @@ export function registerPublicRoutes(app) {
     }
     const created = createSignup(db, { shift_id: shiftId, ...result.value, device_token: token });
     if (!created.ok) {
-      const msg = created.reason === 'full' ? 'Diese Schicht ist leider schon voll.' : 'Schicht nicht gefunden.';
+      const msg = t(created.reason === 'full' ? 'err.full' : 'err.notFound');
       return reply.code(200).type('text/html').send(render(app, req, { orga, errors: [msg], values: req.body }));
     }
     return reply.redirect(orga ? '/orga' : '/danke');
@@ -97,7 +106,7 @@ export function registerPublicRoutes(app) {
   app.post('/orga/signup', (req, reply) => handleSignup(req, reply, true));
 
   app.get('/danke', (req, reply) => {
-    reply.type('text/html').send(app.render('confirm', { title: 'Danke' }));
+    reply.type('text/html').send(app.render('confirm', pub(req, { title: translator(req.lang)('title.thanks') })));
   });
 
   app.get('/meine', (req, reply) => {
@@ -105,12 +114,26 @@ export function registerPublicRoutes(app) {
     const items = listByToken(db, token).map((s) => ({
       ...s, time: `${formatTime(s.starts_at)}–${formatTime(s.ends_at)}`, dayLabel: formatDay(s.starts_at),
     }));
-    reply.type('text/html').send(app.render('meine', { title: 'Meine Schichten', items, csrf: req.session.csrf }));
+    reply.type('text/html').send(app.render('meine', pub(req, {
+      title: translator(req.lang)('title.mine'), items, csrf: req.session.csrf,
+    })));
   });
 
   app.post('/signup/:id/cancel', (req, reply) => {
     if (!requireCsrf(req, reply)) return;
     cancelOwnSignup(db, Number(req.params.id), req.cookies?.htoken);
     return reply.redirect('/meine');
+  });
+
+  // Sprachumschalter: merkt sich die Wahl ein Jahr lang und geht zurück zur Seite.
+  app.get('/lang/:code', (req, reply) => {
+    const code = LANGS.includes(req.params.code) ? req.params.code : 'de';
+    reply.setCookie('lang', code, {
+      httpOnly: true, sameSite: 'lax', secure: app.config.secureCookie, path: '/', maxAge: 60 * 60 * 24 * 365,
+    });
+    const back = String(req.query.back ?? '/');
+    // Nur Pfade auf dieser Seite (kein //evil.example oder /\evil).
+    const safe = /^\/(?![/\\])/.test(back) ? back : '/';
+    return reply.redirect(safe);
   });
 }

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de">
+<html lang="<%= it.lang %>">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,6 +9,10 @@
 </head>
 <body>
   <header class="site-header">
+    <% if (it.langSwitch) { %>
+    <a class="lang-switch" href="/lang/<%= it.lang === 'de' ? 'en' : 'de' %>?back=<%= encodeURIComponent(it.path || '/') %>"
+       lang="<%= it.lang === 'de' ? 'en' : 'de' %>" title="<%= it.t('lang.switch') %>"><%= it.t('lang.switchShort') %></a>
+    <% } %>
     <% if (it.brand.show_logo === '1') { %>
     <img src="<%= it.brand.logoUrl %>" alt="<%= it.brand.org_name || it.brand.event_name %>" class="logo"
          onerror="this.style.display='none'">

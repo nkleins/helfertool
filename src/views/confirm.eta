@@ -1,5 +1,5 @@
 <div class="confirm">
-  <h2>Danke, du bist eingetragen! 🤹</h2>
-  <p>Wir freuen uns auf dich beim Festival.</p>
-  <p><a href="/">Zurück zur Schichtenliste</a></p>
+  <h2><%= it.t('thanks.title') %></h2>
+  <p><%= it.t('thanks.text') %></p>
+  <p><a href="/meine"><%= it.t('thanks.mine') %></a> · <a href="/"><%= it.t('thanks.back') %></a></p>
 </div>
