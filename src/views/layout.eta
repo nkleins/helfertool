@@ -17,6 +17,9 @@
     <% if (it.brand.motto) { %><p class="motto"><%= it.brand.motto %></p><% } %>
   </header>
   <main><%~ it.body %></main>
-  <% if (it.brand.footer) { %><footer class="site-footer"><%= it.brand.footer %></footer><% } %>
+  <footer class="site-footer">
+    <% if (it.brand.footer) { %><div><%= it.brand.footer %></div><% } %>
+    <div class="credit">Helfertool © <%= new Date().getFullYear() %> Nikolai Kleinschmidt</div>
+  </footer>
 </body>
 </html>

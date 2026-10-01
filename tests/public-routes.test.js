@@ -115,13 +115,13 @@ test('POST /signup setzt htoken-Cookie und zeigt Namen gekürzt', async () => {
   const cookie = await sessionCookie(app);
   const csrf = csrfFromDb(db);
   const res = await app.inject({ method: 'POST', url: '/signup',
-    headers: { cookie }, payload: { csrf, shift_id: String(id), name: 'Kolja Kleinschmidt', phone: '', note: '' } });
+    headers: { cookie }, payload: { csrf, shift_id: String(id), name: 'Kolja Mustermann', phone: '', note: '' } });
   assert.equal(res.statusCode, 302);
   const setCookies = [].concat(res.headers['set-cookie'] ?? []).join(';');
   assert.match(setCookies, /htoken=/);
   const home = await app.inject({ method: 'GET', url: '/' });
-  assert.match(home.body, /Kolja K\./);
-  assert.doesNotMatch(home.body, /Kleinschmidt/);
+  assert.match(home.body, /Kolja M\./);
+  assert.doesNotMatch(home.body, /Mustermann/);
   await app.close();
 });
 

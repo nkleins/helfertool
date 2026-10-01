@@ -173,3 +173,4 @@ body.js.searching .area-panel { display: block; }
 body.js.searching .area-panel.no-match { display: none; }
 body.js.searching .panel-head { display: block; }
 body.js.searching .area-desc { display: none; }
+.site-footer .credit { font-size: .72rem; opacity: .7; margin-top: .2rem; }

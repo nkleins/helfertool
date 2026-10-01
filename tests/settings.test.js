@@ -114,3 +114,11 @@ test('Einstellungsseite rendert Formular', async () => {
   assert.match(res.body, /value="Arbeitsbeschaffungsmaßnahmen"/);
   await app.close();
 });
+
+test('Credit steht immer in der Fußzeile, auch ohne eigene Fußzeile', async () => {
+  const { app, db } = await makeApp();
+  db.prepare("INSERT INTO settings (key, value) VALUES ('footer', '')").run();
+  const res = await app.inject({ method: 'GET', url: '/' });
+  assert.match(res.body, /Helfertool © \d{4} Nikolai Kleinschmidt/);
+  await app.close();
+});
