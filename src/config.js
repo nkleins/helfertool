@@ -11,5 +11,6 @@ export function loadConfig(env = process.env) {
     port: Number.parseInt(env.PORT ?? '8080', 10),
     dbPath: env.DB_PATH ?? '/data/app.db',
     secureCookie: baseUrl.startsWith('https'),
+    timeZone: env.TIMEZONE ?? 'Europe/Berlin',
   };
 }

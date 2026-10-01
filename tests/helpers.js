@@ -10,6 +10,7 @@ export const testConfig = {
   port: 0,
   dbPath: ':memory:',
   secureCookie: false,
+  timeZone: 'Europe/Berlin',
 };
 
 export async function makeApp(overrides = {}) {

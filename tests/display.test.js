@@ -20,3 +20,15 @@ test('formatTime schneidet HH:MM aus ISO', () => {
 test('formatDay gibt TT.MM.JJJJ', () => {
   assert.equal(formatDay('2026-09-25T18:30'), '25.09.2026');
 });
+
+test('localNow liefert Ortszeit der Veranstaltung', async () => {
+  const { localNow } = await import('../src/display.js');
+  // 12:30 UTC im Sommer = 14:30 in Berlin
+  assert.equal(localNow('Europe/Berlin', new Date('2026-09-25T12:30:00Z')), '2026-09-25T14:30');
+});
+
+test('pastCutoff zieht die Kulanzzeit ab (auch über Mitternacht)', async () => {
+  const { pastCutoff } = await import('../src/display.js');
+  assert.equal(pastCutoff('2026-09-26T00:30'), '2026-09-25T23:30');
+  assert.equal(pastCutoff('2026-09-25T14:30', 90), '2026-09-25T13:00');
+});

@@ -14,6 +14,17 @@
 <% if (!it.areas.length) { %>
   <p>Aktuell sind keine Bereiche/Schichten ausgeschrieben.</p>
 <% } else { %>
+<div class="filters">
+  <input type="search" id="f-search" placeholder="Suchen: Schicht, Bereich oder Name …" aria-label="Suchen">
+  <div class="filter-row">
+    <select id="f-day" aria-label="Tag auswählen">
+      <option value="">Alle Tage</option>
+      <% it.days.forEach(function(d){ %><option value="<%= d.value %>"><%= d.label %></option><% }) %>
+    </select>
+    <label class="toggle"><input type="checkbox" id="show-past"> Vergangene Schichten anzeigen</label>
+  </div>
+</div>
+
 <div class="tabs" role="tablist">
   <% it.areas.forEach(function(a, i){ %>
     <button class="tab<%= i === 0 ? ' active' : '' %>" data-tab="area-<%= a.id %>"
@@ -23,14 +34,19 @@
 
 <% it.areas.forEach(function(a, i){ %>
   <section class="area-panel<%= i === 0 ? ' active' : '' %>" id="area-<%= a.id %>" style="--area-color:<%= a.color %>">
+    <h3 class="panel-head"><span class="dot" style="background:<%= a.color %>"></span> <%= a.name %></h3>
     <% if (a.description) { %><p class="area-desc"><%= a.description %></p><% } %>
     <% if (!a.shifts.length) { %>
       <p class="empty">Für „<%= a.name %>" gibt es noch keine Schichten.</p>
     <% } %>
+    <p class="empty filter-empty" hidden>Keine passenden Schichten.</p>
     <% a.shifts.forEach(function(s){ %>
-      <div class="slot <%= s.free <= 0 ? 'slot-full' : 'slot-free' %>">
+      <div class="slot <%= s.free <= 0 ? 'slot-full' : 'slot-free' %><%= s.isPast ? ' is-past' : '' %>"
+           data-day="<%= s.day %>"
+           data-search="<%= [a.name, s.title || '', s.notes || ''].concat(s.people.map(function(p){ return p.display; })).join(' ').toLowerCase() %>">
         <div class="slot-time"><span class="day"><%= s.dayLabel %></span><strong><%= s.time %></strong></div>
         <div class="slot-body">
+          <% if (s.isPast) { %><span class="past-badge">vorbei</span><% } %>
           <% if (s.title) { %><div class="slot-title"><%= s.title %></div><% } %>
           <div class="slot-status">
             <% if (s.free > 0) { %><span class="free-badge"><%= s.free %> von <%= s.capacity %> frei</span>
@@ -64,17 +80,55 @@
 (function () {
   var tabs = document.querySelectorAll('.tab');
   var panels = document.querySelectorAll('.area-panel');
+  var search = document.getElementById('f-search');
+  var day = document.getElementById('f-day');
+  var past = document.getElementById('show-past');
+  var current = panels.length ? panels[0].id : null;
+
   function show(id) {
+    current = id;
     panels.forEach(function (p) { p.classList.toggle('active', p.id === id); });
     tabs.forEach(function (t) { t.classList.toggle('active', t.dataset.tab === id); });
     try { localStorage.setItem('kv-area', id); } catch (e) {}
   }
+
+  // Blendet Schichten nach Suche, Tag und "vergangen" aus. Bei aktiver Suche
+  // werden alle Bereiche untereinander gezeigt, damit man nichts übersieht.
+  function apply() {
+    var q = search.value.trim().toLowerCase();
+    var d = day.value;
+    var withPast = past.checked;
+    document.body.classList.toggle('searching', q !== '');
+    var firstVisible = null;
+    panels.forEach(function (p) {
+      var n = 0;
+      p.querySelectorAll('.slot').forEach(function (s) {
+        var ok = (withPast || !s.classList.contains('is-past'))
+          && (!d || s.dataset.day === d)
+          && (!q || s.dataset.search.indexOf(q) !== -1);
+        s.hidden = !ok;
+        if (ok) n++;
+      });
+      p.querySelector('.filter-empty').hidden = n > 0;
+      p.classList.toggle('no-match', n === 0);
+      var tab = document.querySelector('.tab[data-tab="' + p.id + '"]');
+      if (tab) tab.hidden = n === 0;
+      if (n > 0 && !firstVisible) firstVisible = p.id;
+    });
+    var cur = document.getElementById(current);
+    if (!q && firstVisible && cur && cur.classList.contains('no-match')) show(firstVisible);
+  }
+
   tabs.forEach(function (t) { t.addEventListener('click', function () { show(t.dataset.tab); }); });
+  search.addEventListener('input', apply);
+  day.addEventListener('change', apply);
+  past.addEventListener('change', apply);
   try {
     var saved = localStorage.getItem('kv-area');
     if (saved && document.getElementById(saved)) show(saved);
   } catch (e) {}
   document.body.classList.add('js');
+  apply();
 })();
 </script>
 <% } %>

@@ -196,3 +196,20 @@ test('Volle Schicht zeigt "Voll" statt Anmeldeformular', async () => {
   assert.match(res.body, /Voll/);
   await app.close();
 });
+
+test('Schichten gelten erst 1 Stunde nach Ende als vergangen', async () => {
+  const { app, db } = await makeApp({ now: () => '2026-09-25T10:30' });
+  const area_id = seedArea(db, { name: 'Küche' });
+  createShift(db, { area_id, title: 'Alt', starts_at: '2026-09-25T08:00', ends_at: '2026-09-25T09:00', capacity: 2, notes: null });
+  createShift(db, { area_id, title: 'Grade vorbei', starts_at: '2026-09-25T09:00', ends_at: '2026-09-25T10:00', capacity: 2, notes: null });
+  createShift(db, { area_id, title: 'Später', starts_at: '2026-09-26T12:00', ends_at: '2026-09-26T13:00', capacity: 2, notes: null });
+  const res = await app.inject({ method: 'GET', url: '/' });
+  const slot = (title) => res.body.split('class="slot ').find((x) => x.includes(title));
+  assert.match(slot('Alt'), /is-past/);
+  assert.doesNotMatch(slot('Grade vorbei'), /^[^"]*is-past/);
+  assert.doesNotMatch(slot('Später'), /^[^"]*is-past/);
+  assert.match(res.body, /<option value="2026-09-25">Fr 25\.09\.2026<\/option>/);
+  assert.match(res.body, /<option value="2026-09-26">Sa 26\.09\.2026<\/option>/);
+  assert.match(res.body, /Vergangene Schichten anzeigen/);
+  await app.close();
+});
