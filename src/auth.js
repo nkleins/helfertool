@@ -22,12 +22,12 @@ export function verifyPassword(plain, stored) {
 
 const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
 
-export function createSession(db, { isAdmin = false } = {}) {
+export function createSession(db, { isAdmin = false, userId = null } = {}) {
   const id = randomBytes(32).toString('hex');
   const csrf = randomBytes(32).toString('hex');
   const expires_at = new Date(Date.now() + THIRTY_DAYS).toISOString();
-  db.prepare('INSERT INTO sessions (id,is_admin,csrf,expires_at) VALUES (?,?,?,?)')
-    .run(id, isAdmin ? 1 : 0, csrf, expires_at);
+  db.prepare('INSERT INTO sessions (id,is_admin,csrf,expires_at,user_id) VALUES (?,?,?,?,?)')
+    .run(id, isAdmin ? 1 : 0, csrf, expires_at, userId);
   return { id, csrf };
 }
 

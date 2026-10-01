@@ -3,6 +3,7 @@
   <h2><%= it.shift.title || '—' %> <small>(<%= it.shift.area_name %>)</small></h2>
   <p><%= it.shift.starts_at.replace('T',' ') %> – <%= it.shift.ends_at.slice(11) %>,
      <%= it.signups.length %>/<%= it.shift.capacity %> belegt</p>
+  <% if (it.can('shifts')) { %>
   <p>
     <a href="/admin/shifts/<%= it.shift.id %>/edit">Schicht bearbeiten</a> ·
   <form method="post" action="/admin/shifts/<%= it.shift.id %>/delete" class="inline"
@@ -11,6 +12,7 @@
     <button type="submit">Schicht löschen</button>
   </form>
   </p>
+  <% } %>
 
   <% if (it.errors && it.errors.length) { %>
     <div class="errors"><% it.errors.forEach(function(e){ %><p><%= e %></p><% }) %></div>
@@ -18,6 +20,13 @@
 
   <h3>Eingetragene Helfer:innen</h3>
   <% if (!it.signups.length) { %><p>Noch niemand eingetragen.</p><% } %>
+  <% if (!it.can('signups')) { %>
+  <ul class="signups-list">
+  <% it.signups.forEach(function(g){ %>
+    <li class="signup-row"><strong><%= g.name %></strong><% if (g.phone) { %> · <%= g.phone %><% } %><% if (g.note) { %> · <span class="hint"><%= g.note %></span><% } %></li>
+  <% }) %>
+  </ul>
+  <% } else { %>
   <ul class="signups-list">
   <% it.signups.forEach(function(g){ %>
     <li class="signup-row">
@@ -47,4 +56,5 @@
     <input type="text" name="note" placeholder="Notiz (optional)">
     <button type="submit">Hinzufügen</button>
   </form>
+  <% } %>
 </div>

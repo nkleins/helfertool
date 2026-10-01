@@ -9,6 +9,7 @@ import multipart from '@fastify/multipart';
 import { Eta } from 'eta';
 import { createDb } from './db.js';
 import { getSettings, getLogo } from './repositories/settings.js';
+import { ensureOwner, getUser } from './repositories/users.js';
 import { loadConfig } from './config.js';
 import { getSession, createSession } from './auth.js';
 import { registerPublicRoutes } from './routes/public.js';
@@ -22,6 +23,7 @@ export const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 
 export function buildApp(config, db) {
   const app = Fastify({ logger: false });
+  ensureOwner(db, config);
   const eta = new Eta({ views: viewsDir, cache: true });
 
   app.register(formbody);
@@ -70,7 +72,9 @@ export function buildApp(config, db) {
       });
     }
     req.session = session;
-    req.isAdmin = session.is_admin === 1;
+    // Eingeloggt = Admin-Session mit existierendem Account (gelöschte Accounts fliegen raus).
+    req.user = session.is_admin === 1 && session.user_id ? getUser(db, session.user_id) : undefined;
+    req.isAdmin = Boolean(req.user);
   });
 
   app.setErrorHandler((err, req, reply) => {

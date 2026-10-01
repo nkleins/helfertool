@@ -47,7 +47,7 @@ export function updateSignup(db, id, { name, phone = null, note = null }) {
 export function listAllSignups(db) {
   return db
     .prepare(
-      `SELECT a.name AS shift_area, s.title AS shift_title, s.starts_at, s.ends_at,
+      `SELECT s.area_id, a.name AS shift_area, s.title AS shift_title, s.starts_at, s.ends_at,
               g.name, g.phone, g.note, g.created_at
        FROM signups g JOIN shifts s ON s.id = g.shift_id JOIN areas a ON a.id = s.area_id
        ORDER BY s.starts_at, a.name, g.created_at`

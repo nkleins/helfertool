@@ -1,19 +1,32 @@
 import QRCode from 'qrcode';
-import { verifyPassword, createSession, deleteSession } from '../auth.js';
+import { verifyPassword, hashPassword, createSession, deleteSession } from '../auth.js';
 import { requireCsrf, rateLimiter } from '../server.js';
 import { getShift, updateShift, deleteShift, listShifts, generateShifts, planSlots, areaStats, deleteShiftsByAreaDay, resetAll } from '../repositories/shifts.js';
 import { listSignupsByShift, createSignup, deleteSignup, updateSignup, listAllSignups } from '../repositories/signups.js';
-import { validateShiftInput, validateSignupInput, validateAreaInput, validateGenerateInput, validateSettingsInput } from '../validate.js';
-import { getSettings, saveSettings, getLogo, setLogo, clearLogo, detectImageMime } from '../repositories/settings.js';
+import { validateShiftInput, validateSignupInput, validateAreaInput, validateGenerateInput, validateSettingsInput, validateUserInput, validateNewPassword } from '../validate.js';
 import { listAreas, createArea, getArea, updateArea, deleteArea } from '../repositories/areas.js';
+import { getSettings, saveSettings, getLogo, setLogo, clearLogo, detectImageMime } from '../repositories/settings.js';
+import {
+  PERMISSIONS, can, canSeeArea, getUserByName, listUsers, getUser, createUser, updateUserAccess,
+  setPassword, deleteUser, deleteSessionsOfUser, grantArea,
+} from '../repositories/users.js';
 import { signupsCsv } from '../csv.js';
 import { formatTime, formatDay } from '../display.js';
 
 const RESET_PHRASE = 'ALLES LÖSCHEN';
+const PASSWORD_PATHS = new Set(['/admin/password', '/admin/logout']);
+// Bei unbekanntem Benutzernamen trotzdem einen Hash prüfen, damit die Antwortzeit
+// nicht verrät, ob es den Account gibt.
+const DUMMY_HASH = hashPassword('dummy-password-for-timing');
 
 export function requireAdmin(req, reply) {
   if (!req.isAdmin) {
     reply.redirect('/admin/login');
+    return false;
+  }
+  // Erst-Login mit Standardpasswort: erst Passwort ändern, dann weiter.
+  if (req.user.must_change_password && !PASSWORD_PATHS.has(req.routeOptions.url)) {
+    reply.redirect('/admin/password');
     return false;
   }
   return true;
@@ -21,34 +34,60 @@ export function requireAdmin(req, reply) {
 
 export function registerAdminRoutes(app) {
   const db = app.db;
-  const config = app.config;
 
   const loginLimit = rateLimiter(app, { max: 10, timeWindow: '1 minute', keyGenerator: () => 'login' });
 
-  app.get('/admin/login', (req, reply) => {
-    reply.type('text/html').send(app.render('admin-login', {
-      title: 'Login', csrf: req.session.csrf, error: null,
+  function page(req, reply, view, data, code = 200) {
+    const me = req.user;
+    return reply.code(code).type('text/html').send(app.render(view, {
+      csrf: req.session.csrf, me, can: (perm) => can(me, perm), ...data,
     }));
+  }
+
+  function forbidden(req, reply) {
+    page(req, reply, 'admin-forbidden', { title: 'Keine Berechtigung' }, 403);
+    return false;
+  }
+
+  function requirePerm(req, reply, perm) {
+    if (!requireAdmin(req, reply)) return false;
+    return can(req.user, perm) ? true : forbidden(req, reply);
+  }
+
+  function requireOwner(req, reply) {
+    if (!requireAdmin(req, reply)) return false;
+    return req.user.is_owner ? true : forbidden(req, reply);
+  }
+
+  // Schicht laden und prüfen, ob der Account ihren Bereich sehen darf.
+  function scopedShift(req, reply, id) {
+    const shift = getShift(db, Number(id));
+    if (!shift) { reply.code(404).send('Schicht nicht gefunden.'); return null; }
+    if (!canSeeArea(req.user, shift.area_id)) { forbidden(req, reply); return null; }
+    return shift;
+  }
+
+  const myAreas = (req) => listAreas(db).filter((a) => canSeeArea(req.user, a.id));
+
+  app.get('/admin/login', (req, reply) => {
+    page(req, reply, 'admin-login', { title: 'Login', error: null });
   });
 
   app.post('/admin/login', async (req, reply) => {
     if (!(await loginLimit(req, reply))) return;
     if (!requireCsrf(req, reply)) return;
     const { username, password } = req.body;
-    const ok = username === config.adminUser
-      && verifyPassword(password ?? '', config.adminPasswordHash);
+    const user = getUserByName(db, String(username ?? '').trim());
+    const ok = verifyPassword(password ?? '', user ? user.password_hash : DUMMY_HASH) && Boolean(user);
     if (!ok) {
-      return reply.code(200).type('text/html').send(app.render('admin-login', {
-        title: 'Login', csrf: req.session.csrf,
-        error: 'Benutzername oder Passwort ist falsch.',
-      }));
+      return page(req, reply, 'admin-login', { title: 'Login', error: 'Benutzername oder Passwort ist falsch.' });
     }
     deleteSession(db, req.session.id);
-    const created = createSession(db, { isAdmin: true });
+    const created = createSession(db, { isAdmin: true, userId: user.id });
     reply.setCookie('sid', created.id, {
-      httpOnly: true, sameSite: 'lax', secure: config.secureCookie, path: '/',
+      httpOnly: true, sameSite: 'lax', secure: app.config.secureCookie, path: '/',
     });
-    return reply.redirect('/admin');
+    return reply.redirect(user.must_change_password ? '/admin/password' : '/admin');
   });
 
   app.post('/admin/logout', (req, reply) => {
@@ -59,7 +98,7 @@ export function registerAdminRoutes(app) {
 
   app.get('/admin', (req, reply) => {
     if (!requireAdmin(req, reply)) return;
-    const shifts = listShifts(db);
+    const shifts = listShifts(db).filter((s) => canSeeArea(req.user, s.area_id));
     // Gruppierung nach Bereich → Tag
     const groups = [];
     const index = new Map();
@@ -72,142 +111,134 @@ export function registerAdminRoutes(app) {
       }
       index.get(key).items.push({ ...s, time: `${formatTime(s.starts_at)}–${formatTime(s.ends_at)}`, people: listSignupsByShift(db, s.id) });
     }
-    reply.type('text/html').send(app.render('admin-dashboard', {
-      title: 'Dashboard', stats: areaStats(db), groups, csrf: req.session.csrf,
-    }));
+    page(req, reply, 'admin-dashboard', {
+      title: 'Dashboard', stats: areaStats(db).filter((a) => canSeeArea(req.user, a.area_id)), groups,
+    });
   });
 
   app.post('/admin/shifts/bulk-delete', (req, reply) => {
-    if (!requireAdmin(req, reply)) return;
+    if (!requirePerm(req, reply, 'shifts')) return;
     if (!requireCsrf(req, reply)) return;
-    deleteShiftsByAreaDay(db, Number(req.body.area_id), String(req.body.day));
+    const areaId = Number(req.body.area_id);
+    if (!canSeeArea(req.user, areaId)) return forbidden(req, reply);
+    deleteShiftsByAreaDay(db, areaId, String(req.body.day));
     return reply.redirect('/admin');
   });
 
+  const generatePage = (req, reply, values, errors = []) => page(req, reply, 'admin-generate', {
+    title: 'Schichten erzeugen', areas: myAreas(req), values, errors, preview: null,
+  });
+
   app.get('/admin/shifts/new', (req, reply) => {
-    if (!requireAdmin(req, reply)) return;
-    reply.type('text/html').send(app.render('admin-generate', {
-      title: 'Schichten erzeugen', areas: listAreas(db), csrf: req.session.csrf,
-      values: { area_id: '', title: '', date: '', from: '', to: '', slot_minutes: '60', capacity: '2', notes: '' },
-      errors: [], preview: null,
-    }));
+    if (!requirePerm(req, reply, 'shifts')) return;
+    generatePage(req, reply, { area_id: '', title: '', date: '', from: '', to: '', slot_minutes: '60', capacity: '2', notes: '' });
   });
 
   app.post('/admin/shifts/generate', (req, reply) => {
-    if (!requireAdmin(req, reply)) return;
+    if (!requirePerm(req, reply, 'shifts')) return;
     if (!requireCsrf(req, reply)) return;
     const v = validateGenerateInput(req.body);
-    if (!v.ok) {
-      return reply.code(200).type('text/html').send(app.render('admin-generate', {
-        title: 'Schichten erzeugen', areas: listAreas(db), csrf: req.session.csrf,
-        values: req.body, errors: v.errors, preview: null,
-      }));
-    }
+    if (!v.ok) return generatePage(req, reply, req.body, v.errors);
+    if (!canSeeArea(req.user, v.value.area_id)) return forbidden(req, reply);
     const slots = planSlots(v.value);
-    if (slots.length === 0) {
-      return reply.code(200).type('text/html').send(app.render('admin-generate', {
-        title: 'Schichten erzeugen', areas: listAreas(db), csrf: req.session.csrf,
-        values: req.body, errors: ['Das Zeitfenster ist kürzer als eine Schicht.'], preview: null,
-      }));
-    }
+    if (slots.length === 0) return generatePage(req, reply, req.body, ['Das Zeitfenster ist kürzer als eine Schicht.']);
     generateShifts(db, v.value);
     return reply.redirect('/admin');
   });
 
   app.get('/admin/shifts/:id/edit', (req, reply) => {
-    if (!requireAdmin(req, reply)) return;
-    const shift = getShift(db, Number(req.params.id));
-    if (!shift) return reply.code(404).send('Schicht nicht gefunden.');
-    reply.type('text/html').send(app.render('admin-shift-form', {
-      title: 'Schicht bearbeiten', csrf: req.session.csrf,
-      action: `/admin/shifts/${shift.id}`, shift, areas: listAreas(db), errors: [],
-    }));
+    if (!requirePerm(req, reply, 'shifts')) return;
+    const shift = scopedShift(req, reply, req.params.id);
+    if (!shift) return;
+    page(req, reply, 'admin-shift-form', {
+      title: 'Schicht bearbeiten', action: `/admin/shifts/${shift.id}`, shift, areas: myAreas(req), errors: [],
+    });
   });
 
   app.post('/admin/shifts/:id', (req, reply) => {
-    if (!requireAdmin(req, reply)) return;
+    if (!requirePerm(req, reply, 'shifts')) return;
     if (!requireCsrf(req, reply)) return;
-    const id = Number(req.params.id);
+    const shift = scopedShift(req, reply, req.params.id);
+    if (!shift) return;
     const v = validateShiftInput(req.body);
     if (!v.ok) {
-      return reply.code(200).type('text/html').send(app.render('admin-shift-form', {
-        title: 'Schicht bearbeiten', csrf: req.session.csrf,
-        action: `/admin/shifts/${id}`, shift: { ...req.body, id }, areas: listAreas(db), errors: v.errors,
-      }));
+      return page(req, reply, 'admin-shift-form', {
+        title: 'Schicht bearbeiten', action: `/admin/shifts/${shift.id}`, shift: { ...req.body, id: shift.id },
+        areas: myAreas(req), errors: v.errors,
+      });
     }
-    updateShift(db, id, v.value);
+    if (!canSeeArea(req.user, v.value.area_id)) return forbidden(req, reply);
+    updateShift(db, shift.id, v.value);
     return reply.redirect('/admin');
   });
 
   app.post('/admin/shifts/:id/delete', (req, reply) => {
-    if (!requireAdmin(req, reply)) return;
+    if (!requirePerm(req, reply, 'shifts')) return;
     if (!requireCsrf(req, reply)) return;
-    deleteShift(db, Number(req.params.id));
+    const shift = scopedShift(req, reply, req.params.id);
+    if (!shift) return;
+    deleteShift(db, shift.id);
     return reply.redirect('/admin');
   });
 
+  function shiftDetail(req, reply, shift, errors = []) {
+    const area = getArea(db, shift.area_id);
+    return page(req, reply, 'admin-shift-detail', {
+      title: shift.title, shift: { ...shift, area_name: area ? area.name : '' },
+      signups: listSignupsByShift(db, shift.id), errors,
+    });
+  }
+
   app.get('/admin/shifts/:id', (req, reply) => {
     if (!requireAdmin(req, reply)) return;
-    const id = Number(req.params.id);
-    const shift = getShift(db, id);
-    if (!shift) return reply.code(404).send('Schicht nicht gefunden.');
-    const area = getArea(db, shift.area_id);
-    const signups = listSignupsByShift(db, id);
-    reply.type('text/html').send(app.render('admin-shift-detail', {
-      title: shift.title, shift: { ...shift, area_name: area ? area.name : '' }, signups, csrf: req.session.csrf, errors: [],
-    }));
+    const shift = scopedShift(req, reply, req.params.id);
+    if (!shift) return;
+    shiftDetail(req, reply, shift);
   });
 
   app.post('/admin/shifts/:id/signups', (req, reply) => {
-    if (!requireAdmin(req, reply)) return;
+    if (!requirePerm(req, reply, 'signups')) return;
     if (!requireCsrf(req, reply)) return;
-    const id = Number(req.params.id);
+    const shift = scopedShift(req, reply, req.params.id);
+    if (!shift) return;
     const v = validateSignupInput(req.body);
     if (v.ok) {
-      const r = createSignup(db, { shift_id: id, ...v.value });
-      if (!r.ok && r.reason === 'full') {
-        const shift = getShift(db, id);
-        const area = getArea(db, shift.area_id);
-        const signups = listSignupsByShift(db, id);
-        return reply.code(200).type('text/html').send(app.render('admin-shift-detail', {
-          title: shift.title, shift: { ...shift, area_name: area ? area.name : '' }, signups, csrf: req.session.csrf,
-          errors: ['Schicht ist voll.'],
-        }));
-      }
+      const r = createSignup(db, { shift_id: shift.id, ...v.value });
+      if (!r.ok && r.reason === 'full') return shiftDetail(req, reply, shift, ['Schicht ist voll.']);
     }
-    return reply.redirect(`/admin/shifts/${id}`);
+    return reply.redirect(`/admin/shifts/${shift.id}`);
   });
 
+  // Schicht zum Eintrag aus der DB holen (nicht aus dem Formular), dann Bereich prüfen.
+  function scopedSignupShift(req, reply) {
+    const row = db.prepare('SELECT shift_id FROM signups WHERE id = ?').get(Number(req.params.sid));
+    if (!row) { reply.redirect('/admin'); return null; }
+    return scopedShift(req, reply, row.shift_id);
+  }
+
   app.post('/admin/signups/:sid/delete', (req, reply) => {
-    if (!requireAdmin(req, reply)) return;
+    if (!requirePerm(req, reply, 'signups')) return;
     if (!requireCsrf(req, reply)) return;
+    const shift = scopedSignupShift(req, reply);
+    if (!shift) return;
     deleteSignup(db, Number(req.params.sid));
-    return reply.redirect(`/admin/shifts/${Number(req.body.shift_id)}`);
+    return reply.redirect(`/admin/shifts/${shift.id}`);
   });
 
   app.post('/admin/signups/:sid', (req, reply) => {
-    if (!requireAdmin(req, reply)) return;
+    if (!requirePerm(req, reply, 'signups')) return;
     if (!requireCsrf(req, reply)) return;
-    const sid = Number(req.params.sid);
-    const shiftId = Number(req.body.shift_id);
+    const shift = scopedSignupShift(req, reply);
+    if (!shift) return;
     const v = validateSignupInput(req.body);
-    if (!v.ok) {
-      const shift = getShift(db, shiftId);
-      if (!shift) return reply.redirect('/admin');
-      const area = getArea(db, shift.area_id);
-      const signups = listSignupsByShift(db, shiftId);
-      return reply.code(200).type('text/html').send(app.render('admin-shift-detail', {
-        title: shift.title, shift: { ...shift, area_name: area ? area.name : '' }, signups,
-        csrf: req.session.csrf, errors: v.errors,
-      }));
-    }
-    updateSignup(db, sid, v.value);
-    return reply.redirect(`/admin/shifts/${shiftId}`);
+    if (!v.ok) return shiftDetail(req, reply, shift, v.errors);
+    updateSignup(db, Number(req.params.sid), v.value);
+    return reply.redirect(`/admin/shifts/${shift.id}`);
   });
 
   app.get('/admin/export.csv', (req, reply) => {
-    if (!requireAdmin(req, reply)) return;
-    const csv = signupsCsv(listAllSignups(db));
+    if (!requirePerm(req, reply, 'export')) return;
+    const csv = signupsCsv(listAllSignups(db).filter((r) => canSeeArea(req.user, r.area_id)));
     reply
       .header('Content-Type', 'text/csv; charset=utf-8')
       .header('Content-Disposition', 'attachment; filename="helfer-export.csv"')
@@ -216,78 +247,72 @@ export function registerAdminRoutes(app) {
 
   app.get('/admin/qr', async (req, reply) => {
     if (!requireAdmin(req, reply)) return;
-    const url = `${config.baseUrl}/`;
+    const url = `${app.config.baseUrl}/`;
     const dataUrl = await QRCode.toDataURL(url, { width: 480, margin: 2 });
-    reply.type('text/html').send(app.render('admin-qr', {
-      title: 'QR-Code', url, dataUrl, csrf: req.session.csrf,
-    }));
+    page(req, reply, 'admin-qr', { title: 'QR-Code', url, dataUrl });
   });
 
   app.get('/admin/qr.svg', async (req, reply) => {
     if (!requireAdmin(req, reply)) return;
-    const svg = await QRCode.toString(`${config.baseUrl}/`, { type: 'svg', margin: 2 });
+    const svg = await QRCode.toString(`${app.config.baseUrl}/`, { type: 'svg', margin: 2 });
     reply.header('Content-Type', 'image/svg+xml').send(svg);
   });
 
+  const areasPage = (req, reply, errors = []) => page(req, reply, 'admin-areas', {
+    title: 'Bereiche', areas: myAreas(req), errors,
+  });
+
   app.get('/admin/areas', (req, reply) => {
-    if (!requireAdmin(req, reply)) return;
-    reply.type('text/html').send(app.render('admin-areas', {
-      title: 'Bereiche', areas: listAreas(db), csrf: req.session.csrf, errors: [],
-    }));
+    if (!requirePerm(req, reply, 'areas')) return;
+    areasPage(req, reply);
   });
 
   app.post('/admin/areas', (req, reply) => {
-    if (!requireAdmin(req, reply)) return;
+    if (!requirePerm(req, reply, 'areas')) return;
     if (!requireCsrf(req, reply)) return;
     const v = validateAreaInput(req.body);
-    if (!v.ok) {
-      return reply.code(200).type('text/html').send(app.render('admin-areas', {
-        title: 'Bereiche', areas: listAreas(db), csrf: req.session.csrf, errors: v.errors,
-      }));
-    }
-    createArea(db, v.value);
+    if (!v.ok) return areasPage(req, reply, v.errors);
+    grantArea(db, req.user, createArea(db, v.value));
     return reply.redirect('/admin/areas');
   });
 
   app.post('/admin/areas/:id', (req, reply) => {
-    if (!requireAdmin(req, reply)) return;
+    if (!requirePerm(req, reply, 'areas')) return;
     if (!requireCsrf(req, reply)) return;
     const id = Number(req.params.id);
     if (!getArea(db, id)) return reply.code(404).send('Bereich nicht gefunden.');
+    if (!canSeeArea(req.user, id)) return forbidden(req, reply);
     const v = validateAreaInput(req.body);
-    if (!v.ok) {
-      return reply.code(200).type('text/html').send(app.render('admin-areas', {
-        title: 'Bereiche', areas: listAreas(db), csrf: req.session.csrf, errors: v.errors,
-      }));
-    }
+    if (!v.ok) return areasPage(req, reply, v.errors);
     updateArea(db, id, v.value);
     return reply.redirect('/admin/areas');
   });
 
   app.post('/admin/areas/:id/delete', (req, reply) => {
-    if (!requireAdmin(req, reply)) return;
+    if (!requirePerm(req, reply, 'areas')) return;
     if (!requireCsrf(req, reply)) return;
-    deleteArea(db, Number(req.params.id));
+    const id = Number(req.params.id);
+    if (!canSeeArea(req.user, id)) return forbidden(req, reply);
+    deleteArea(db, id);
     return reply.redirect('/admin/areas');
   });
 
   function renderSettings(req, reply, { values, errors = [], saved = false, resetDone = false, resetErrors = [] }) {
-    return reply.code(200).type('text/html').send(app.render('admin-settings', {
-      title: 'Einstellungen', csrf: req.session.csrf, values, errors, saved, resetDone, resetErrors,
-      resetPhrase: RESET_PHRASE,
-      hasCustomLogo: Boolean(getLogo(db)),
-    }));
+    return page(req, reply, 'admin-settings', {
+      title: 'Einstellungen', values, errors, saved, resetDone, resetErrors,
+      resetPhrase: RESET_PHRASE, hasCustomLogo: Boolean(getLogo(db)),
+    });
   }
 
   app.get('/admin/settings', (req, reply) => {
-    if (!requireAdmin(req, reply)) return;
+    if (!requirePerm(req, reply, 'settings_view')) return;
     return renderSettings(req, reply, {
       values: getSettings(db), saved: req.query.saved === '1', resetDone: req.query.reset === '1',
     });
   });
 
   app.post('/admin/reset', (req, reply) => {
-    if (!requireAdmin(req, reply)) return;
+    if (!requireOwner(req, reply)) return;
     if (!requireCsrf(req, reply)) return;
     if (String(req.body.confirm ?? '').trim().toUpperCase() !== RESET_PHRASE) {
       return renderSettings(req, reply, {
@@ -299,7 +324,7 @@ export function registerAdminRoutes(app) {
   });
 
   app.post('/admin/settings', async (req, reply) => {
-    if (!requireAdmin(req, reply)) return;
+    if (!requirePerm(req, reply, 'settings_edit')) return;
     const body = {};
     let file = null;
     if (req.isMultipart()) {
@@ -338,5 +363,87 @@ export function registerAdminRoutes(app) {
     if (body.remove_logo) clearLogo(db);
     else if (file) setLogo(db, { mime, data: file });
     return reply.redirect('/admin/settings?saved=1');
+  });
+
+  // --- Eigenes Passwort ---------------------------------------------------
+
+  const passwordPage = (req, reply, errors = [], saved = false) => page(req, reply, 'admin-password', {
+    title: 'Passwort ändern', errors, saved,
+  });
+
+  app.get('/admin/password', (req, reply) => {
+    if (!requireAdmin(req, reply)) return;
+    passwordPage(req, reply, [], req.query.saved === '1');
+  });
+
+  app.post('/admin/password', (req, reply) => {
+    if (!requireAdmin(req, reply)) return;
+    if (!requireCsrf(req, reply)) return;
+    const errors = [];
+    if (!verifyPassword(req.body.current ?? '', req.user.password_hash)) errors.push('Aktuelles Passwort ist falsch.');
+    const v = validateNewPassword(req.body.password, req.body.password2);
+    if (!v.ok) errors.push(...v.errors);
+    else if (req.body.password === req.body.current) errors.push('Das neue Passwort muss sich vom alten unterscheiden.');
+    if (errors.length) return passwordPage(req, reply, errors);
+    setPassword(db, req.user.id, v.value);
+    deleteSessionsOfUser(db, req.user.id, req.session.id); // andere Geräte abmelden
+    return reply.redirect('/admin/password?saved=1');
+  });
+
+  // --- Benutzerverwaltung (nur Hauptadmin) -------------------------------
+
+  const usersPage = (req, reply, { errors = [], values = {}, notice = null } = {}) => page(req, reply, 'admin-users', {
+    title: 'Benutzer', users: listUsers(db), areas: listAreas(db), permissions: PERMISSIONS,
+    errors, values, notice,
+  });
+
+  app.get('/admin/users', (req, reply) => {
+    if (!requireOwner(req, reply)) return;
+    const notices = { created: 'Account angelegt.', saved: 'Gespeichert.', deleted: 'Account gelöscht.', password: 'Passwort gesetzt – muss beim nächsten Login geändert werden.' };
+    usersPage(req, reply, { notice: notices[req.query.ok] ?? null });
+  });
+
+  app.post('/admin/users', (req, reply) => {
+    if (!requireOwner(req, reply)) return;
+    if (!requireCsrf(req, reply)) return;
+    const v = validateUserInput(req.body, { requirePassword: true });
+    const errors = v.ok ? [] : [...v.errors];
+    if (v.ok && getUserByName(db, v.value.username)) errors.push('Diesen Benutzernamen gibt es schon.');
+    if (errors.length) return usersPage(req, reply, { errors, values: req.body });
+    createUser(db, { ...v.value, mustChange: true });
+    return reply.redirect('/admin/users?ok=created');
+  });
+
+  app.post('/admin/users/:id', (req, reply) => {
+    if (!requireOwner(req, reply)) return;
+    if (!requireCsrf(req, reply)) return;
+    const user = getUser(db, Number(req.params.id));
+    if (!user || user.is_owner) return reply.code(404).send('Account nicht gefunden.');
+    const v = validateUserInput(req.body, { requirePassword: false });
+    const errors = v.ok ? [] : [...v.errors];
+    const clash = v.ok && getUserByName(db, v.value.username);
+    if (clash && clash.id !== user.id) errors.push('Diesen Benutzernamen gibt es schon.');
+    if (errors.length) return usersPage(req, reply, { errors });
+    updateUserAccess(db, user.id, v.value);
+    return reply.redirect('/admin/users?ok=saved');
+  });
+
+  app.post('/admin/users/:id/password', (req, reply) => {
+    if (!requireOwner(req, reply)) return;
+    if (!requireCsrf(req, reply)) return;
+    const user = getUser(db, Number(req.params.id));
+    if (!user || user.is_owner) return reply.code(404).send('Account nicht gefunden.');
+    const v = validateNewPassword(req.body.password, req.body.password);
+    if (!v.ok) return usersPage(req, reply, { errors: v.errors });
+    setPassword(db, user.id, v.value, { mustChange: true });
+    deleteSessionsOfUser(db, user.id);
+    return reply.redirect('/admin/users?ok=password');
+  });
+
+  app.post('/admin/users/:id/delete', (req, reply) => {
+    if (!requireOwner(req, reply)) return;
+    if (!requireCsrf(req, reply)) return;
+    deleteUser(db, Number(req.params.id));
+    return reply.redirect('/admin/users?ok=deleted');
   });
 }

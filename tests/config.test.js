@@ -17,6 +17,7 @@ test('loads and derives values', () => {
 
 test('throws when required missing', () => {
   assert.throws(() => loadConfig({ ADMIN_USER: 'admin' }));
+  assert.doesNotThrow(() => loadConfig({ SESSION_SECRET: 's', BASE_URL: 'http://x' }));
 });
 
 test('http base -> insecure cookie', () => {

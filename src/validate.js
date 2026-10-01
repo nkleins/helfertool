@@ -90,3 +90,36 @@ export function validateSettingsInput(body) {
     show_logo: body.show_logo ? '1' : '0',
   } };
 }
+
+const MIN_PASSWORD = 8;
+
+export function validateNewPassword(password, repeat) {
+  const errors = [];
+  const pw = typeof password === 'string' ? password : '';
+  if (pw.length < MIN_PASSWORD) errors.push(`Passwort muss mindestens ${MIN_PASSWORD} Zeichen lang sein.`);
+  else if (pw.length > 200) errors.push('Passwort ist zu lang.');
+  if (pw !== repeat) errors.push('Die beiden Passwörter stimmen nicht überein.');
+  if (errors.length) return { ok: false, errors };
+  return { ok: true, value: pw };
+}
+
+const asList = (v) => (v == null ? [] : [].concat(v));
+
+// Account-Formular: Name, Rechte-Haken und Bereichs-Auswahl.
+export function validateUserInput(body, { requirePassword }) {
+  const errors = [];
+  const username = clean(body.username);
+  if (username === '') errors.push('Benutzername ist erforderlich.');
+  else if (username.length > 50) errors.push('Benutzername ist zu lang (max. 50 Zeichen).');
+  const perms = asList(body.perms).map(String);
+  const areaIds = body.area_scope === 'some'
+    ? asList(body.areas).map((x) => Number.parseInt(x, 10)).filter((n) => Number.isInteger(n) && n > 0)
+    : null;
+  let password;
+  if (requirePassword) {
+    const v = validateNewPassword(body.password, body.password);
+    if (!v.ok) errors.push(...v.errors); else password = v.value;
+  }
+  if (errors.length) return { ok: false, errors };
+  return { ok: true, value: { username, perms, areaIds, ...(password ? { password } : {}) } };
+}

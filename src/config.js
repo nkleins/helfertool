@@ -1,5 +1,5 @@
 export function loadConfig(env = process.env) {
-  const required = ['ADMIN_USER', 'ADMIN_PASSWORD_HASH', 'SESSION_SECRET', 'BASE_URL'];
+  const required = ['SESSION_SECRET', 'BASE_URL'];
   const missing = required.filter((k) => !env[k]);
   if (missing.length) throw new Error(`Fehlende ENV-Variablen: ${missing.join(', ')}`);
   const baseUrl = env.BASE_URL;

@@ -63,6 +63,16 @@ export function initSchema(db) {
       csrf       TEXT NOT NULL,
       expires_at TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS users (
+      id                   INTEGER PRIMARY KEY,
+      username             TEXT NOT NULL UNIQUE COLLATE NOCASE,
+      password_hash        TEXT NOT NULL,
+      is_owner             INTEGER NOT NULL DEFAULT 0,
+      perms                TEXT NOT NULL DEFAULT '[]',
+      area_ids             TEXT,
+      must_change_password INTEGER NOT NULL DEFAULT 0,
+      created_at           TEXT NOT NULL
+    );
     CREATE TABLE IF NOT EXISTS settings (
       key   TEXT PRIMARY KEY,
       value TEXT
@@ -111,6 +121,10 @@ export function initSchema(db) {
   }
   if (!columnNames(db, 'shifts').includes('requires_phone')) {
     db.exec('ALTER TABLE shifts ADD COLUMN requires_phone INTEGER NOT NULL DEFAULT 0;');
+  }
+
+  if (!columnNames(db, 'sessions').includes('user_id')) {
+    db.exec('ALTER TABLE sessions ADD COLUMN user_id INTEGER;');
   }
 
   if (!columnNames(db, 'signups').includes('device_token')) {

@@ -7,7 +7,7 @@ Ein Admin-Login, Anmeldung ohne Registrierung, QR-Code zum Aushängen.
 ```bash
 npm install
 cp .env.example .env
-node scripts/hash-password.mjs "test123"   # Hash in .env eintragen
+node scripts/hash-password.mjs "test123"   # optional: Hash in .env eintragen (sonst Login admin/admin)
 npm test
 node --env-file=.env src/server.js   # http://localhost:8080  (BASE_URL in .env auf http://localhost:8080 setzen)
 ```
@@ -37,6 +37,19 @@ cd /opt/helfer-koelnvention
 git pull
 docker compose up -d --build
 ```
+
+## Accounts & Rechte
+Beim ersten Start wird automatisch ein **Hauptadmin** angelegt:
+- Sind `ADMIN_USER` und `ADMIN_PASSWORD_HASH` in der `.env` gesetzt, wird dieser Account übernommen
+  (bestehende Installationen loggen sich also wie gewohnt ein).
+- Sonst gibt es den Login **`admin` / `admin`** – beim ersten Login muss sofort ein eigenes Passwort
+  gesetzt werden.
+
+Danach liegen alle Accounts in der Datenbank; die beiden ENV-Variablen werden nur beim allerersten
+Start gelesen. Der Hauptadmin kann unter `/admin/users` weitere Accounts anlegen und pro Account
+festlegen, welche Bereiche er sieht und was er darf (Schichten, Helfer:innen eintragen, Bereiche,
+CSV-Export, Einstellungen ansehen/ändern). Jeder Account kann unter `/admin/password` sein eigenes
+Passwort ändern. Zurücksetzen und Benutzerverwaltung kann nur der Hauptadmin.
 
 ## Bedienung
 - Admin: `https://helfer.example.org/admin` → einloggen → Schichten anlegen.

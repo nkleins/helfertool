@@ -176,3 +176,14 @@ body.js.searching .area-desc { display: none; }
 .site-footer .credit { font-size: .72rem; opacity: .7; margin-top: .2rem; }
 .danger-zone { margin-top: 2rem; border: 1px solid var(--danger); border-radius: var(--radius); padding: .8rem; }
 .danger-zone h3 { color: var(--danger); margin-top: 0; }
+
+/* Benutzer & Rechte */
+fieldset.plain { border: 0; padding: 0; margin: 0; }
+.user-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: .7rem .8rem; margin: .6rem 0; }
+.user-card h3 { margin: 0 0 .3rem; }
+.user-card summary { cursor: pointer; }
+.user-card details[open] summary { margin-bottom: .6rem; }
+.user-card form { margin-top: .6rem; }
+.shift-form fieldset label.checkbox { display: flex; align-items: center; gap: .5rem; }
+.shift-form fieldset label.checkbox input { width: auto; }
+.area-pick { padding-left: 1.4rem; }
