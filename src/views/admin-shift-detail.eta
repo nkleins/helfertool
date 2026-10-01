@@ -1,25 +1,24 @@
 <div class="admin">
-  <p><a href="/admin">← Dashboard</a></p>
-  <h2><%= it.shift.title || '—' %> <small>(<%= it.shift.area_name %>)</small></h2>
-  <p><%= it.shift.starts_at.replace('T',' ') %> – <%= it.shift.ends_at.slice(11) %>,
-     <%= it.signups.length %>/<%= it.shift.capacity %> belegt</p>
+  <div class="admin-bar">
+    <h2><%= it.shift.title || 'Schicht' %> <small class="hint">(<%= it.shift.area_name %>)</small></h2>
+    <div class="admin-actions"><a href="/admin">← Dashboard</a></div>
+  </div>
+  <p><%= it.when %> · <%= it.signups.length %>/<%= it.shift.capacity %> belegt</p>
   <% if (it.can('shifts')) { %>
-  <p>
-    <a href="/admin/shifts/<%= it.shift.id %>/edit">Schicht bearbeiten</a> ·
-  <form method="post" action="/admin/shifts/<%= it.shift.id %>/delete" class="inline"
-        onsubmit="return confirm('Schicht wirklich löschen? Alle Eintragungen gehen verloren.')">
-    <input type="hidden" name="csrf" value="<%= it.csrf %>">
-    <button type="submit">Schicht löschen</button>
-  </form>
-  </p>
+  <div class="admin-actions">
+    <a href="/admin/shifts/<%= it.shift.id %>/edit">Schicht bearbeiten</a>
+    <form method="post" action="/admin/shifts/<%= it.shift.id %>/delete" class="inline"
+          onsubmit="return confirm('Schicht wirklich löschen? Alle Eintragungen gehen verloren.')">
+      <input type="hidden" name="csrf" value="<%= it.csrf %>">
+      <button type="submit" class="danger">Schicht löschen</button>
+    </form>
+  </div>
   <% } %>
 
-  <% if (it.errors && it.errors.length) { %>
-    <div class="errors"><% it.errors.forEach(function(e){ %><p><%= e %></p><% }) %></div>
-  <% } %>
+  <%~ include('errors', it) %>
 
   <h3>Eingetragene Helfer:innen</h3>
-  <% if (!it.signups.length) { %><p>Noch niemand eingetragen.</p><% } %>
+  <% if (!it.signups.length) { %><p class="hint">Noch niemand eingetragen.</p><% } %>
   <% if (!it.can('signups')) { %>
   <ul class="signups-list">
   <% it.signups.forEach(function(g){ %>
@@ -32,7 +31,6 @@
     <li class="signup-row">
       <form method="post" action="/admin/signups/<%= g.id %>" class="signup-form">
         <input type="hidden" name="csrf" value="<%= it.csrf %>">
-        <input type="hidden" name="shift_id" value="<%= it.shift.id %>">
         <input type="text" name="name" value="<%= g.name %>" required maxlength="500" aria-label="Name" placeholder="Name">
         <input type="tel" name="phone" value="<%= g.phone || '' %>" maxlength="500" aria-label="Telefon" placeholder="Telefon">
         <input type="text" name="note" value="<%= g.note || '' %>" maxlength="500" aria-label="Notiz" placeholder="Notiz">
@@ -41,7 +39,6 @@
       <form method="post" action="/admin/signups/<%= g.id %>/delete" class="inline"
             onsubmit="return confirm('Eintrag entfernen?')">
         <input type="hidden" name="csrf" value="<%= it.csrf %>">
-        <input type="hidden" name="shift_id" value="<%= it.shift.id %>">
         <button type="submit" class="danger">entfernen</button>
       </form>
     </li>
@@ -51,9 +48,9 @@
   <h3>Helfer:in manuell hinzufügen</h3>
   <form method="post" action="/admin/shifts/<%= it.shift.id %>/signups" class="signup-form">
     <input type="hidden" name="csrf" value="<%= it.csrf %>">
-    <input type="text" name="name" placeholder="Name" required>
-    <input type="tel" name="phone" placeholder="Telefon (optional)">
-    <input type="text" name="note" placeholder="Notiz (optional)">
+    <input type="text" name="name" placeholder="Name" required maxlength="500">
+    <input type="tel" name="phone" placeholder="Telefon (optional)" maxlength="500">
+    <input type="text" name="note" placeholder="Notiz (optional)" maxlength="500">
     <button type="submit">Hinzufügen</button>
   </form>
   <% } %>

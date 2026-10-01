@@ -1,6 +1,4 @@
-<% if (it.errors && it.errors.length) { %>
-  <div class="errors"><% it.errors.forEach(function(e){ %><p><%= e %></p><% }) %></div>
-<% } %>
+<% if (!it.errorShiftId) { %><%~ include('errors', { errors: it.errors }) %><% } %>
 
 <% if (it.orga) { %>
   <p class="intro"><%= it.t('intro.orga') %>
@@ -8,7 +6,6 @@
 <% } else { %>
   <p class="intro"><%= it.t('intro.public') %>
     <a href="/meine"><%= it.t('link.mine') %></a></p>
-  <p class="hint"><%= it.t('intro.phone') %></p>
 <% } %>
 
 <% if (!it.areas.length) { %>
@@ -36,12 +33,9 @@
   <section class="area-panel<%= i === 0 ? ' active' : '' %>" id="area-<%= a.id %>" style="--area-color:<%= a.color %>">
     <h3 class="panel-head"><span class="dot" style="background:<%= a.color %>"></span> <%= a.name %></h3>
     <% if (a.description) { %><p class="area-desc"><%= a.description %></p><% } %>
-    <% if (!a.shifts.length) { %>
-      <p class="empty"><%= it.t('area.noShifts', { name: a.name }) %></p>
-    <% } %>
     <p class="empty filter-empty" hidden><%= it.t('filter.noMatch') %></p>
-    <% a.shifts.forEach(function(s){ %>
-      <div class="slot <%= s.free <= 0 ? 'slot-full' : 'slot-free' %><%= s.isPast ? ' is-past' : '' %>"
+    <% a.shifts.forEach(function(s){ var hasError = it.errorShiftId === String(s.id); %>
+      <div class="slot <%= s.free <= 0 ? 'slot-full' : 'slot-free' %><%= s.isPast ? ' is-past' : '' %><%= hasError ? ' has-error' : '' %>"
            data-day="<%= s.day %>"
            data-search="<%= [a.searchText, s.searchText].concat(s.people.map(function(p){ return p.display; })).join(' ').toLowerCase() %>">
         <div class="slot-time"><span class="day"><%= s.dayLabel %></span><strong><%= s.time %></strong></div>
@@ -57,15 +51,19 @@
             <ul class="names"><% s.people.forEach(function(p){ %><li><%= p.display %><% if (p.phone) { %> <span class="phone">· <%= p.phone %></span><% } %></li><% }) %></ul>
           <% } %>
           <% if (s.notes) { %><p class="notes"><%= s.notes %></p><% } %>
+          <% if (hasError) { %><%~ include('errors', { errors: it.errors }) %><% } %>
           <% if (s.free > 0) { %>
             <form method="post" action="<%= it.action %>" class="signup-form">
               <input type="hidden" name="csrf" value="<%= it.csrf %>">
               <input type="hidden" name="shift_id" value="<%= s.id %>">
-              <input type="text" name="name" placeholder="<%= it.t('form.firstName') %>" required maxlength="500">
+              <input type="text" name="name" placeholder="<%= it.t('form.firstName') %>" required maxlength="500"
+                     value="<%= hasError ? (it.values.name || '') : '' %>">
               <% if (s.requires_phone) { %>
-                <input type="tel" name="phone" placeholder="<%= it.t('form.phoneRequired') %>" required maxlength="500">
+                <input type="tel" name="phone" placeholder="<%= it.t('form.phoneRequired') %>" required maxlength="500"
+                       value="<%= hasError ? (it.values.phone || '') : '' %>">
               <% } else { %>
-                <input type="tel" name="phone" placeholder="<%= it.t('form.phoneOptional') %>" maxlength="500">
+                <input type="tel" name="phone" placeholder="<%= it.t('form.phoneOptional') %>" maxlength="500"
+                       value="<%= hasError ? (it.values.phone || '') : '' %>">
               <% } %>
               <button type="submit"><%= it.t('form.submit') %></button>
             </form>
@@ -127,8 +125,15 @@
     var saved = localStorage.getItem('kv-area');
     if (saved && document.getElementById(saved)) show(saved);
   } catch (e) {}
+  // Nach einem Fehler beim Eintragen: betroffene Schicht zeigen und hinscrollen.
+  var errorSlot = document.querySelector('.slot.has-error');
+  if (errorSlot) {
+    if (errorSlot.classList.contains('is-past')) past.checked = true;
+    show(errorSlot.closest('.area-panel').id);
+  }
   document.body.classList.add('js');
   apply();
+  if (errorSlot) errorSlot.scrollIntoView({ block: 'center' });
 })();
 </script>
 <% } %>

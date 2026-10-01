@@ -1,0 +1,3 @@
+<% if (it.errors && it.errors.length) { %>
+  <div class="errors"><% it.errors.forEach(function(e){ %><p><%= e %></p><% }) %></div>
+<% } %>

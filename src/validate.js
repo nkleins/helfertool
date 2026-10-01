@@ -11,7 +11,7 @@ export function validateSignupInput(body) {
   return { ok: true, value: { name, phone: orNull(body.phone), note: orNull(body.note) } };
 }
 
-const ALLOWED_SLOTS = [30, 60, 90, 120, 180, 240, 300, 360, 420, 480];
+export const ALLOWED_SLOTS = [30, 60, 90, 120, 180, 240, 300, 360, 420, 480];
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
 export function validateAreaInput(body) {

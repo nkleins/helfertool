@@ -26,6 +26,8 @@ export function createSession(db, { isAdmin = false, userId = null } = {}) {
   const id = randomBytes(32).toString('hex');
   const csrf = randomBytes(32).toString('hex');
   const expires_at = new Date(Date.now() + THIRTY_DAYS).toISOString();
+  // Abgelaufene Sessions bei der Gelegenheit aufräumen, damit die Tabelle nicht wächst.
+  db.prepare('DELETE FROM sessions WHERE expires_at <= ?').run(new Date().toISOString());
   db.prepare('INSERT INTO sessions (id,is_admin,csrf,expires_at,user_id) VALUES (?,?,?,?,?)')
     .run(id, isAdmin ? 1 : 0, csrf, expires_at, userId);
   return { id, csrf };

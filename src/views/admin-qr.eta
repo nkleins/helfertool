@@ -1,8 +1,12 @@
-<div class="admin qr-page">
-  <p><a href="/admin">← Dashboard</a></p>
-  <h2>QR-Code zur Helfer-Anmeldung</h2>
+<div class="admin">
+  <div class="admin-bar">
+    <h2>QR-Code</h2>
+    <div class="admin-actions"><a href="/admin">← Dashboard</a></div>
+  </div>
+  <div class="qr-page">
   <p>Führt zu: <code><%= it.url %></code></p>
   <img src="<%= it.dataUrl %>" alt="QR-Code" class="qr-img">
   <p><a href="/admin/qr.svg" download="helfer-qr.svg">QR als SVG herunterladen</a></p>
   <p class="hint">Zum Ausdrucken/Aushängen – Handy-Kamera drauf, fertig.</p>
+  </div>
 </div>

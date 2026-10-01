@@ -3,9 +3,7 @@
     <h2>Bereiche</h2>
     <div class="admin-actions"><a href="/admin">← Dashboard</a></div>
   </div>
-  <% if (it.errors && it.errors.length) { %>
-    <div class="errors"><% it.errors.forEach(function(e){ %><p><%= e %></p><% }) %></div>
-  <% } %>
+  <%~ include('errors', it) %>
 
   <form method="post" action="/admin/areas" class="area-form">
     <input type="hidden" name="csrf" value="<%= it.csrf %>">
@@ -27,7 +25,7 @@
     <tbody>
     <% it.areas.forEach(function(a){ %>
       <tr>
-        <form method="post" action="/admin/areas/<%= a.id %>" class="row-form">
+        <form method="post" action="/admin/areas/<%= a.id %>">
           <input type="hidden" name="csrf" value="<%= it.csrf %>">
           <td><input name="name" value="<%= a.name %>" maxlength="500"></td>
           <td><input type="color" name="color" value="<%= a.color %>"></td>

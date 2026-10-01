@@ -8,7 +8,7 @@ import rateLimit from '@fastify/rate-limit';
 import multipart from '@fastify/multipart';
 import { Eta } from 'eta';
 import { createDb } from './db.js';
-import { getSettings, getLogo } from './repositories/settings.js';
+import { getSettings, getLogo, getLogoVersion } from './repositories/settings.js';
 import { ensureOwner, getUser } from './repositories/users.js';
 import { translator, pickLang } from './i18n.js';
 import { loadConfig } from './config.js';
@@ -20,7 +20,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const viewsDir = path.join(__dirname, 'views');
 const publicDir = path.join(__dirname, '..', 'public');
 const DEFAULT_LOGO = 'Logo_weiss-1_2.png';
-export const MAX_LOGO_BYTES = 2 * 1024 * 1024;
+const MAX_LOGO_BYTES = 2 * 1024 * 1024;
+// Statische Dateien brauchen keine Session (spart pro Seitenaufruf DB-Zeilen).
+const NO_SESSION = /^\/(assets\/|styles\.css|logo|favicon\.ico)/;
 
 export function buildApp(config, db) {
   const app = Fastify({ logger: false });
@@ -44,13 +46,16 @@ export function buildApp(config, db) {
   app.decorate('db', db);
   app.decorate('render', (view, data) => {
     const brand = getSettings(db);
-    const logo = getLogo(db);
-    brand.logoUrl = logo ? `/logo?v=${encodeURIComponent(logo.updated_at)}` : '/logo';
+    const logoVersion = getLogoVersion(db);
+    brand.logoUrl = logoVersion ? `/logo?v=${encodeURIComponent(logoVersion)}` : '/logo';
     const lang = data.lang ?? 'de';
     const t = translator(lang);
     const body = eta.render(view, { ...data, brand, lang, t });
     return eta.render('layout', { ...data, brand, lang, t, body });
   });
+
+  // Ältere Browser fragen ohne <link rel="icon"> direkt nach /favicon.ico.
+  app.get('/favicon.ico', (req, reply) => reply.redirect('/logo'));
 
   // Hochgeladenes Logo aus der DB, sonst das mitgelieferte Standard-Logo.
   app.get('/logo', (req, reply) => {
@@ -64,6 +69,7 @@ export function buildApp(config, db) {
 
   // Session-Middleware: sorgt dafür, dass jede Anfrage eine Session hat.
   app.addHook('onRequest', async (req, reply) => {
+    if (NO_SESSION.test(req.url)) return;
     let sid = req.cookies?.sid;
     let session = sid ? getSession(db, sid) : undefined;
     if (!session) {

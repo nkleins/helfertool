@@ -29,6 +29,11 @@ export function getLogo(db) {
   return db.prepare("SELECT mime, data, updated_at FROM uploads WHERE name = 'logo'").get();
 }
 
+// Nur der Zeitstempel (für Cache-Busting), ohne das Bild selbst zu laden.
+export function getLogoVersion(db) {
+  return db.prepare("SELECT updated_at FROM uploads WHERE name = 'logo'").get()?.updated_at ?? null;
+}
+
 export function setLogo(db, { mime, data }) {
   db.prepare(`INSERT INTO uploads (name, mime, data, updated_at) VALUES ('logo', ?, ?, ?)
     ON CONFLICT(name) DO UPDATE SET mime = excluded.mime, data = excluded.data, updated_at = excluded.updated_at`)

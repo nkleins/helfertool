@@ -3,9 +3,7 @@
     <h2>Schichten erzeugen</h2>
     <div class="admin-actions"><a href="/admin">← Dashboard</a> · <a href="/admin/areas">Bereiche</a></div>
   </div>
-  <% if (it.errors && it.errors.length) { %>
-    <div class="errors"><% it.errors.forEach(function(e){ %><p><%= e %></p><% }) %></div>
-  <% } %>
+  <%~ include('errors', it) %>
   <% if (!it.areas.length) { %>
     <p>Bitte lege zuerst einen <a href="/admin/areas">Bereich</a> an.</p>
   <% } else { %>
@@ -53,7 +51,7 @@
     <p class="hint">Liegt „Bis" vor „Von", geht die Schicht über Mitternacht – die Zeiten nach 00:00 werden automatisch auf den Folgetag gelegt.</p>
     <label>Schichtlänge
       <select name="slot_minutes">
-        <% ;[30,60,90,120,180,240,300,360,420,480].forEach(function(m){ %>
+        <% it.slotOptions.forEach(function(m){ %>
           <option value="<%= m %>" <%= String(m) === String(it.values.slot_minutes) ? 'selected' : '' %>><%= m %> min<%= m % 60 === 0 ? ' (' + (m/60) + ' Std.)' : '' %></option>
         <% }) %>
       </select>
@@ -68,7 +66,6 @@
       <label>Note <input name="notes_en" value="<%= it.values.notes_en || '' %>" maxlength="500"></label>
     </details>
     <button type="submit">Schichten erzeugen</button>
-    <a href="/admin">Abbrechen</a>
   </form>
   <% } %>
 </div>

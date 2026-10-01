@@ -4,9 +4,7 @@
     <div class="admin-actions"><a href="/admin">← Dashboard</a> · <a href="/admin/password">Mein Passwort ändern</a><% if (it.me.is_owner) { %> · <a href="/admin/users">Benutzer verwalten</a><% } %></div>
   </div>
   <% if (it.saved) { %><p class="saved">Gespeichert.</p><% } %>
-  <% if (it.errors && it.errors.length) { %>
-    <div class="errors"><% it.errors.forEach(function(e){ %><p><%= e %></p><% }) %></div>
-  <% } %>
+  <%~ include('errors', it) %>
 
   <% if (!it.can('settings_edit')) { %><p class="hint">Du kannst die Einstellungen nur ansehen.</p><% } %>
   <form method="post" action="/admin/settings" enctype="multipart/form-data" class="shift-form">
@@ -53,9 +51,7 @@
   <section class="danger-zone" id="reset">
     <h3>Neu anfangen (für die nächste Con)</h3>
     <% if (it.resetDone) { %><p class="saved">Alle Schichten und Anmeldungen wurden gelöscht.</p><% } %>
-    <% if (it.resetErrors && it.resetErrors.length) { %>
-      <div class="errors"><% it.resetErrors.forEach(function(e){ %><p><%= e %></p><% }) %></div>
-    <% } %>
+    <%~ include('errors', { errors: it.resetErrors }) %>
     <p>Löscht <strong>alle Schichten und alle Anmeldungen</strong> endgültig. Name, Logo und
       Einstellungen bleiben erhalten. Tipp: vorher den <a href="/admin/export.csv">CSV-Export</a> sichern.</p>
     <form method="post" action="/admin/reset" class="shift-form"

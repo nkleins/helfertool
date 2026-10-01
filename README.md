@@ -1,72 +1,78 @@
-# Helfertool Kölnvention
+# Helfertool
 
-Schicht-Anmeldung für Helfer:innen (Kölnvention e.V., Jonglage-Festival).
-Ein Admin-Login, Anmeldung ohne Registrierung, QR-Code zum Aushängen.
+Schicht-Anmeldung für Helfer:innen auf Conventions und Festivals – ursprünglich gebaut für die
+Kölnvention. Helfer:innen tragen sich ohne Registrierung per Handy ein (QR-Code zum Aushängen),
+das Orga-Team plant Bereiche und Schichten im Admin-Bereich.
 
-## Lokal entwickeln
+## Funktionen
+- **Schichtplan** pro Bereich mit Suche (Schicht, Bereich, Name), Tagesauswahl und automatisch
+  ausgeblendeten vergangenen Schichten (1 Stunde nach Schichtende)
+- **Meine Schichten**: eigene Anmeldungen auf dem Gerät ansehen und abmelden
+- **Deutsch/Englisch** umschaltbar; Bereiche und Schichten optional mit englischem Text
+- **Orga-Schichten** unter `/orga` mit vollem Namen und Telefonnummer
+- **Schicht-Generator**: ein Zeitfenster wird automatisch in gleich lange Schichten geteilt
+- **Accounts mit Rechten**: Hauptadmin plus Team-Accounts, die nur bestimmte Bereiche sehen
+  oder nur bestimmte Dinge dürfen
+- **Branding** ohne Code: Name, Logo, Motto, Fußzeile und Akzentfarbe im Admin-Bereich
+- **CSV-Export**, **QR-Code**, **Zurücksetzen** für die nächste Con
+
+## Installation (Docker)
 ```bash
-npm install
+git clone <REPO_URL> /opt/helfertool
+cd /opt/helfertool
 cp .env.example .env
-node scripts/hash-password.mjs "test123"   # optional: Hash in .env eintragen (sonst Login admin/admin)
-npm test
-node --env-file=.env src/server.js   # http://localhost:8080  (BASE_URL in .env auf http://localhost:8080 setzen)
-```
-
-## Auf dem Server deployen
-```bash
-git clone <REPO_URL> /opt/helfer-koelnvention
-cd /opt/helfer-koelnvention
-cp .env.example .env
-# Passwort-Hash erzeugen und in .env eintragen:
-docker run --rm -v "$PWD":/app -w /app node:24-slim node scripts/hash-password.mjs "DEIN-PASSWORT"
-# SESSION_SECRET, ADMIN_USER, BASE_URL in .env setzen
+# In .env setzen: SESSION_SECRET (zufälliger String) und BASE_URL (öffentliche Adresse)
 docker compose up -d --build
 ```
+Danach unter `<BASE_URL>/admin` mit **`admin` / `admin`** einloggen – beim ersten Login muss
+sofort ein eigenes Passwort gesetzt werden. Alles Weitere (Name, Logo, Bereiche, Accounts)
+wird im Admin-Bereich eingestellt.
 
-nginx + TLS:
-```bash
-cp nginx/helfer.example.org.conf /etc/nginx/sites-available/helfer.example.org
-ln -s /etc/nginx/sites-available/helfer.example.org /etc/nginx/sites-enabled/
-nginx -t && systemctl reload nginx
-certbot --nginx -d helfer.example.org
-```
+Die App lauscht auf `127.0.0.1:8080`. Für HTTPS einen Reverse-Proxy davorsetzen; eine
+Beispielkonfiguration für nginx liegt in `nginx/` (Domain und Port anpassen, dann
+`certbot --nginx -d <domain>`).
 
-## Updaten
+### Updaten
 ```bash
-cd /opt/helfer-koelnvention
-git pull
-docker compose up -d --build
+cd /opt/helfertool && git pull && docker compose up -d --build
 ```
+Neue Datenbank-Spalten werden beim Start automatisch ergänzt, vorhandene Daten bleiben erhalten.
+
+### Backup
+Alles – Schichten, Anmeldungen, Accounts, Einstellungen und Logo – liegt in einer SQLite-Datei:
+`./data/app.db`. Für ein Backup diese Datei sichern.
+
+## Konfiguration (`.env`)
+| Variable | Bedeutung |
+|---|---|
+| `SESSION_SECRET` | Pflicht. Zufälliger String für Cookies. |
+| `BASE_URL` | Pflicht. Öffentliche Adresse (bestimmt QR-Code und sichere Cookies bei `https`). |
+| `ADMIN_USER`, `ADMIN_PASSWORD_HASH` | Optional. Nur beim allerersten Start: legt den Hauptadmin mit diesen Daten an statt `admin`/`admin`. Hash erzeugen mit `node scripts/hash-password.mjs "PASSWORT"`. |
+| `TIMEZONE` | Zeitzone der Veranstaltung, Standard `Europe/Berlin`. |
+| `PORT`, `DB_PATH` | Standard `8080` und `/data/app.db`. |
 
 ## Accounts & Rechte
-Beim ersten Start wird automatisch ein **Hauptadmin** angelegt:
-- Sind `ADMIN_USER` und `ADMIN_PASSWORD_HASH` in der `.env` gesetzt, wird dieser Account übernommen
-  (bestehende Installationen loggen sich also wie gewohnt ein).
-- Sonst gibt es den Login **`admin` / `admin`** – beim ersten Login muss sofort ein eigenes Passwort
-  gesetzt werden.
+- Der **Hauptadmin** darf alles, verwaltet unter „Benutzer" die anderen Accounts und kann
+  alles zurücksetzen.
+- **Team-Accounts** bekommen per Haken einzelne Rechte (Schichten, Helfer:innen eintragen,
+  Bereiche, CSV-Export, Einstellungen ansehen/ändern) und sehen entweder alle oder nur
+  ausgewählte Bereiche. Rechte lassen sich jederzeit ändern und gelten sofort.
+- Jeder Account ändert sein Passwort unter „Passwort"; neue Accounts müssen das Start-Passwort
+  beim ersten Login ändern.
 
-Danach liegen alle Accounts in der Datenbank; die beiden ENV-Variablen werden nur beim allerersten
-Start gelesen. Der Hauptadmin kann unter `/admin/users` weitere Accounts anlegen und pro Account
-festlegen, welche Bereiche er sieht und was er darf (Schichten, Helfer:innen eintragen, Bereiche,
-CSV-Export, Einstellungen ansehen/ändern). Jeder Account kann unter `/admin/password` sein eigenes
-Passwort ändern. Zurücksetzen und Benutzerverwaltung kann nur der Hauptadmin.
+## Bedienung in Kürze
+1. **Einstellungen**: Name, Logo, Motto und Farbe festlegen.
+2. **Bereiche** anlegen (Name, Farbe, Reihenfolge, optional Beschreibung und englischer Text).
+3. **Schichten erzeugen**: Bereich, Datum, Von/Bis, Schichtlänge und Plätze wählen.
+   Liegt „Bis" vor „Von", geht das Zeitfenster über Mitternacht.
+4. **QR-Code** ausdrucken und aushängen – er führt auf den Schichtplan.
 
-## Bedienung
-- Admin: `https://helfer.example.org/admin` → einloggen → Schichten anlegen.
-- QR-Code: im Admin unter „QR-Code" → ausdrucken/aushängen.
-- Export: „CSV-Export" lädt alle Eintragungen.
-
-### Bereiche & Schicht-Generator
-Zuerst Bereiche unter `/admin/areas` anlegen (Name, Farbe, Sortierung), dann Schichten
-unter `/admin/shifts/new` per Zeitfenster (Datum, von/bis, Slot-Länge, Kapazität) erzeugen.
-Die öffentliche Seite `/` zeigt pro Bereich einen Stundenplan zum Anmelden; `/meine` zeigt
-gerätebasiert (Cookie) die eigenen Anmeldungen zum Nachschauen und Abmelden.
-
-### Branding / für andere Conventions nutzen
-Unter `/admin/settings` (im Dashboard „Einstellungen") lassen sich ohne Code-Änderung anpassen:
-Name der Seite (z.B. „Disco-Dienste"), Name der Con, Motto/Datum, Fußzeile, Akzentfarbe und
-das Logo (Upload als PNG/JPG/GIF/WebP, max. 2 MB). Logo und Einstellungen liegen in der
-SQLite-DB – eine andere Con kann das Repo also einfach klonen, `.env` anlegen,
-`docker compose up -d --build` starten und alles Weitere im Admin-Bereich einstellen.
-
-Die SQLite-DB liegt in `./data/app.db` (Docker-Volume) – für Backups einfach diese Datei sichern.
+## Entwicklung
+```bash
+npm install
+cp .env.example .env               # BASE_URL=http://localhost:8080 setzen
+npm test
+node --env-file=.env src/server.js # http://localhost:8080
+```
+Aufbau: Fastify-Server (`src/server.js`), Routen in `src/routes/`, Datenbankzugriffe in
+`src/repositories/`, Templates (Eta) in `src/views/`, Texte der Helferseiten in `src/i18n.js`.

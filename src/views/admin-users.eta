@@ -4,9 +4,7 @@
     <div class="admin-actions"><a href="/admin">← Dashboard</a> · <a href="/admin/settings">Einstellungen</a></div>
   </div>
   <% if (it.notice) { %><p class="saved"><%= it.notice %></p><% } %>
-  <% if (it.errors && it.errors.length) { %>
-    <div class="errors"><% it.errors.forEach(function(e){ %><p><%= e %></p><% }) %></div>
-  <% } %>
+  <%~ include('errors', it) %>
 
   <% it.users.forEach(function(u){ %>
     <section class="user-card">

@@ -9,11 +9,11 @@ import { translator, LANGS } from '../i18n.js';
 
 const HTOKEN_MAX_AGE = 60 * 60 * 24 * 120; // 120 Tage
 
-// orga=false: Teilnehmer-Schichten, Namen gekürzt ("Vorname N."), kein Telefon.
-// orga=true:  Orga-Schichten, voller Name + Telefonnummer (Orga-Koordination).
 // Englischer Text, falls gepflegt und Englisch gewählt – sonst der deutsche.
 const pick = (lang, de, en) => (lang === 'en' && en ? en : de);
 
+// orga=false: Teilnehmer-Schichten, Namen gekürzt ("Vorname N."), kein Telefon.
+// orga=true:  Orga-Schichten, voller Name + Telefonnummer (Orga-Koordination).
 function buildAreaGroups(db, orga, cutoff, lang) {
   const areas = listAreas(db).map((a) => ({
     ...a,
@@ -60,11 +60,17 @@ function render(app, req, extra = {}) {
   const days = [...new Map(areas.flatMap((a) => a.shifts).map((s) => [s.day, s.dayLabel])).entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([value, label]) => ({ value, label: `${t.list('weekdays')[new Date(`${value}T12:00Z`).getUTCDay()]} ${label}` }));
+  // Fehler beim Eintragen direkt an der betroffenen Schicht anzeigen (mit den
+  // eingegebenen Werten), nur wenn es die Schicht nicht mehr gibt, oben.
+  const values = extra.values ?? {};
+  const errorShiftId = extra.errors?.length
+    && areas.some((a) => a.shifts.some((s) => String(s.id) === String(values.shift_id)))
+    ? String(values.shift_id) : null;
   return app.render('public-list', pub(req, {
     title: t(orga ? 'title.orga' : 'title.help'), orga,
     areas, days, csrf: req.session.csrf,
     action: orga ? '/orga/signup' : '/signup',
-    errors: [], values: {}, ...extra,
+    errors: [], ...extra, values, errorShiftId,
   }));
 }
 

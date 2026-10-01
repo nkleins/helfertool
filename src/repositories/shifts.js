@@ -13,7 +13,7 @@ export function getShift(db, id) {
 export function listShifts(db) {
   return db
     .prepare(
-      `SELECT s.*, a.name AS area_name, a.color AS area_color, a.sort_order AS sort_order,
+      `SELECT s.*, a.name AS area_name, a.color AS area_color,
         (SELECT COUNT(*) FROM signups g WHERE g.shift_id = s.id) AS taken
        FROM shifts s JOIN areas a ON a.id = s.area_id
        ORDER BY a.sort_order, a.name, s.starts_at`
@@ -102,8 +102,7 @@ export function areaStats(db) {
        GROUP BY a.id
        ORDER BY a.sort_order, a.name`
     )
-    .all()
-    .map((r) => ({ ...r, free: Math.max(0, r.capacity - r.taken) }));
+    .all();
 }
 
 // Neustart für die nächste Con: alle Schichten samt Anmeldungen löschen,

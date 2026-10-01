@@ -3,9 +3,9 @@ import { verifyPassword, hashPassword, createSession, deleteSession } from '../a
 import { requireCsrf, rateLimiter } from '../server.js';
 import { getShift, updateShift, deleteShift, listShifts, generateShifts, planSlots, areaStats, deleteShiftsByAreaDay, resetAll } from '../repositories/shifts.js';
 import { listSignupsByShift, createSignup, deleteSignup, updateSignup, listAllSignups } from '../repositories/signups.js';
-import { validateShiftInput, validateSignupInput, validateAreaInput, validateGenerateInput, validateSettingsInput, validateUserInput, validateNewPassword } from '../validate.js';
+import { validateShiftInput, validateSignupInput, validateAreaInput, validateGenerateInput, validateSettingsInput, validateUserInput, validateNewPassword, ALLOWED_SLOTS } from '../validate.js';
 import { listAreas, createArea, getArea, updateArea, deleteArea } from '../repositories/areas.js';
-import { getSettings, saveSettings, getLogo, setLogo, clearLogo, detectImageMime } from '../repositories/settings.js';
+import { getSettings, saveSettings, getLogoVersion, setLogo, clearLogo, detectImageMime } from '../repositories/settings.js';
 import {
   PERMISSIONS, can, canSeeArea, getUserByName, listUsers, getUser, createUser, updateUserAccess,
   setPassword, deleteUser, deleteSessionsOfUser, grantArea,
@@ -14,18 +14,17 @@ import { signupsCsv } from '../csv.js';
 import { formatTime, formatDay } from '../display.js';
 
 const RESET_PHRASE = 'ALLES LÖSCHEN';
-const PASSWORD_PATHS = new Set(['/admin/password', '/admin/logout']);
 // Bei unbekanntem Benutzernamen trotzdem einen Hash prüfen, damit die Antwortzeit
 // nicht verrät, ob es den Account gibt.
 const DUMMY_HASH = hashPassword('dummy-password-for-timing');
 
-export function requireAdmin(req, reply) {
+function requireAdmin(req, reply) {
   if (!req.isAdmin) {
     reply.redirect('/admin/login');
     return false;
   }
   // Erst-Login mit Standardpasswort: erst Passwort ändern, dann weiter.
-  if (req.user.must_change_password && !PASSWORD_PATHS.has(req.routeOptions.url)) {
+  if (req.user.must_change_password && req.routeOptions.url !== '/admin/password') {
     reply.redirect('/admin/password');
     return false;
   }
@@ -70,6 +69,7 @@ export function registerAdminRoutes(app) {
   const myAreas = (req) => listAreas(db).filter((a) => canSeeArea(req.user, a.id));
 
   app.get('/admin/login', (req, reply) => {
+    if (req.isAdmin) return reply.redirect('/admin');
     page(req, reply, 'admin-login', { title: 'Login', error: null });
   });
 
@@ -126,7 +126,7 @@ export function registerAdminRoutes(app) {
   });
 
   const generatePage = (req, reply, values, errors = []) => page(req, reply, 'admin-generate', {
-    title: 'Schichten erzeugen', areas: myAreas(req), values, errors, preview: null,
+    title: 'Schichten erzeugen', areas: myAreas(req), values, errors, slotOptions: ALLOWED_SLOTS,
   });
 
   app.get('/admin/shifts/new', (req, reply) => {
@@ -183,8 +183,10 @@ export function registerAdminRoutes(app) {
 
   function shiftDetail(req, reply, shift, errors = []) {
     const area = getArea(db, shift.area_id);
+    const sameDay = shift.starts_at.slice(0, 10) === shift.ends_at.slice(0, 10);
+    const when = `${formatDay(shift.starts_at)}, ${formatTime(shift.starts_at)}–${sameDay ? '' : `${formatDay(shift.ends_at)}, `}${formatTime(shift.ends_at)}`;
     return page(req, reply, 'admin-shift-detail', {
-      title: shift.title, shift: { ...shift, area_name: area ? area.name : '' },
+      title: shift.title || 'Schicht', when, shift: { ...shift, area_name: area ? area.name : '' },
       signups: listSignupsByShift(db, shift.id), errors,
     });
   }
@@ -202,10 +204,9 @@ export function registerAdminRoutes(app) {
     const shift = scopedShift(req, reply, req.params.id);
     if (!shift) return;
     const v = validateSignupInput(req.body);
-    if (v.ok) {
-      const r = createSignup(db, { shift_id: shift.id, ...v.value });
-      if (!r.ok && r.reason === 'full') return shiftDetail(req, reply, shift, ['Schicht ist voll.']);
-    }
+    if (!v.ok) return shiftDetail(req, reply, shift, v.errors);
+    const r = createSignup(db, { shift_id: shift.id, ...v.value });
+    if (!r.ok && r.reason === 'full') return shiftDetail(req, reply, shift, ['Schicht ist voll.']);
     return reply.redirect(`/admin/shifts/${shift.id}`);
   });
 
@@ -300,7 +301,7 @@ export function registerAdminRoutes(app) {
   function renderSettings(req, reply, { values, errors = [], saved = false, resetDone = false, resetErrors = [] }) {
     return page(req, reply, 'admin-settings', {
       title: 'Einstellungen', values, errors, saved, resetDone, resetErrors,
-      resetPhrase: RESET_PHRASE, hasCustomLogo: Boolean(getLogo(db)),
+      resetPhrase: RESET_PHRASE, hasCustomLogo: Boolean(getLogoVersion(db)),
     });
   }
 

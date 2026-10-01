@@ -45,14 +45,13 @@ test('listShifts clamps free at zero when overfilled', () => {
   assert.equal(s.free, 0);
 });
 
-test('listShifts liefert area_name, area_color und sort_order aus dem Join', () => {
+test('listShifts liefert area_name und area_color aus dem Join', () => {
   const db = createDb(':memory:');
   const area_id = seedArea(db, { name: 'Küche', color: '#ff0000', sort_order: 2 });
   createShift(db, { area_id, ...sampleShift });
   const [s] = listShifts(db);
   assert.equal(s.area_name, 'Küche');
   assert.equal(s.area_color, '#ff0000');
-  assert.equal(s.sort_order, 2);
 });
 
 test('update + delete shift', () => {
