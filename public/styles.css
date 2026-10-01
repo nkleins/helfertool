@@ -174,3 +174,5 @@ body.js.searching .area-panel.no-match { display: none; }
 body.js.searching .panel-head { display: block; }
 body.js.searching .area-desc { display: none; }
 .site-footer .credit { font-size: .72rem; opacity: .7; margin-top: .2rem; }
+.danger-zone { margin-top: 2rem; border: 1px solid var(--danger); border-radius: var(--radius); padding: .8rem; }
+.danger-zone h3 { color: var(--danger); margin-top: 0; }

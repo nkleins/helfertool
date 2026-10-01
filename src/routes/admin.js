@@ -1,13 +1,15 @@
 import QRCode from 'qrcode';
 import { verifyPassword, createSession, deleteSession } from '../auth.js';
 import { requireCsrf, rateLimiter } from '../server.js';
-import { getShift, updateShift, deleteShift, listShifts, generateShifts, planSlots, areaStats, deleteShiftsByAreaDay } from '../repositories/shifts.js';
+import { getShift, updateShift, deleteShift, listShifts, generateShifts, planSlots, areaStats, deleteShiftsByAreaDay, resetAll } from '../repositories/shifts.js';
 import { listSignupsByShift, createSignup, deleteSignup, updateSignup, listAllSignups } from '../repositories/signups.js';
 import { validateShiftInput, validateSignupInput, validateAreaInput, validateGenerateInput, validateSettingsInput } from '../validate.js';
 import { getSettings, saveSettings, getLogo, setLogo, clearLogo, detectImageMime } from '../repositories/settings.js';
 import { listAreas, createArea, getArea, updateArea, deleteArea } from '../repositories/areas.js';
 import { signupsCsv } from '../csv.js';
 import { formatTime, formatDay } from '../display.js';
+
+const RESET_PHRASE = 'ALLES LÖSCHEN';
 
 export function requireAdmin(req, reply) {
   if (!req.isAdmin) {
@@ -269,16 +271,31 @@ export function registerAdminRoutes(app) {
     return reply.redirect('/admin/areas');
   });
 
-  function renderSettings(req, reply, { values, errors = [], saved = false }) {
+  function renderSettings(req, reply, { values, errors = [], saved = false, resetDone = false, resetErrors = [] }) {
     return reply.code(200).type('text/html').send(app.render('admin-settings', {
-      title: 'Einstellungen', csrf: req.session.csrf, values, errors, saved,
+      title: 'Einstellungen', csrf: req.session.csrf, values, errors, saved, resetDone, resetErrors,
+      resetPhrase: RESET_PHRASE,
       hasCustomLogo: Boolean(getLogo(db)),
     }));
   }
 
   app.get('/admin/settings', (req, reply) => {
     if (!requireAdmin(req, reply)) return;
-    return renderSettings(req, reply, { values: getSettings(db), saved: req.query.saved === '1' });
+    return renderSettings(req, reply, {
+      values: getSettings(db), saved: req.query.saved === '1', resetDone: req.query.reset === '1',
+    });
+  });
+
+  app.post('/admin/reset', (req, reply) => {
+    if (!requireAdmin(req, reply)) return;
+    if (!requireCsrf(req, reply)) return;
+    if (String(req.body.confirm ?? '').trim().toUpperCase() !== RESET_PHRASE) {
+      return renderSettings(req, reply, {
+        values: getSettings(db), resetErrors: [`Zum Bestätigen bitte genau „${RESET_PHRASE}" eintippen.`],
+      });
+    }
+    resetAll(db, { includeAreas: Boolean(req.body.include_areas) });
+    return reply.redirect('/admin/settings?reset=1');
   });
 
   app.post('/admin/settings', async (req, reply) => {

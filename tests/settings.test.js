@@ -122,3 +122,59 @@ test('Credit steht immer in der Fußzeile, auch ohne eigene Fußzeile', async ()
   assert.match(res.body, /Helfertool © \d{4} Nikolai Kleinschmidt/);
   await app.close();
 });
+
+async function seedData(db) {
+  const { createArea } = await import('../src/repositories/areas.js');
+  const { createShift } = await import('../src/repositories/shifts.js');
+  const { createSignup } = await import('../src/repositories/signups.js');
+  const area_id = createArea(db, { name: 'Bar' });
+  const shift_id = createShift(db, { area_id, title: null, starts_at: '2026-09-25T08:00', ends_at: '2026-09-25T09:00', capacity: 2, notes: null });
+  createSignup(db, { shift_id, name: 'Anna' });
+}
+const count = (db, t) => db.prepare(`SELECT COUNT(*) n FROM ${t}`).get().n;
+
+test('Zurücksetzen ohne richtige Bestätigung löscht nichts', async () => {
+  const { app, db, cookie, csrf } = await adminSession();
+  await seedData(db);
+  const res = await app.inject({ method: 'POST', url: '/admin/reset', headers: { cookie },
+    payload: { csrf, confirm: 'ja' } });
+  assert.equal(res.statusCode, 200);
+  assert.match(res.body, /ALLES LÖSCHEN/);
+  assert.equal(count(db, 'shifts'), 1);
+  assert.equal(count(db, 'signups'), 1);
+  await app.close();
+});
+
+test('Zurücksetzen löscht Schichten und Anmeldungen, behält Bereiche und Branding', async () => {
+  const { app, db, cookie, csrf } = await adminSession();
+  await seedData(db);
+  db.prepare("INSERT INTO settings (key, value) VALUES ('event_name', 'Disco-Dienste')").run();
+  const res = await app.inject({ method: 'POST', url: '/admin/reset', headers: { cookie },
+    payload: { csrf, confirm: ' alles löschen ' } });
+  assert.equal(res.statusCode, 302);
+  assert.equal(count(db, 'shifts'), 0);
+  assert.equal(count(db, 'signups'), 0);
+  assert.equal(count(db, 'areas'), 1);
+  assert.equal(getSettings(db).event_name, 'Disco-Dienste');
+  await app.close();
+});
+
+test('Zurücksetzen mit Haken löscht auch Bereiche', async () => {
+  const { app, db, cookie, csrf } = await adminSession();
+  await seedData(db);
+  await app.inject({ method: 'POST', url: '/admin/reset', headers: { cookie },
+    payload: { csrf, confirm: 'ALLES LÖSCHEN', include_areas: '1' } });
+  assert.equal(count(db, 'areas'), 0);
+  await app.close();
+});
+
+test('Zurücksetzen erfordert Login und CSRF', async () => {
+  const { app, db, cookie } = await adminSession();
+  await seedData(db);
+  const r1 = await app.inject({ method: 'POST', url: '/admin/reset', payload: { confirm: 'ALLES LÖSCHEN' } });
+  assert.equal(r1.statusCode, 302);
+  const r2 = await app.inject({ method: 'POST', url: '/admin/reset', headers: { cookie }, payload: { csrf: 'x', confirm: 'ALLES LÖSCHEN' } });
+  assert.equal(r2.statusCode, 403);
+  assert.equal(count(db, 'shifts'), 1);
+  await app.close();
+});

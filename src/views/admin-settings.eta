@@ -45,4 +45,26 @@
 
     <button type="submit">Speichern</button>
   </form>
+
+  <section class="danger-zone" id="reset">
+    <h3>Neu anfangen (für die nächste Con)</h3>
+    <% if (it.resetDone) { %><p class="saved">Alle Schichten und Anmeldungen wurden gelöscht.</p><% } %>
+    <% if (it.resetErrors && it.resetErrors.length) { %>
+      <div class="errors"><% it.resetErrors.forEach(function(e){ %><p><%= e %></p><% }) %></div>
+    <% } %>
+    <p>Löscht <strong>alle Schichten und alle Anmeldungen</strong> endgültig. Name, Logo und
+      Einstellungen bleiben erhalten. Tipp: vorher den <a href="/admin/export.csv">CSV-Export</a> sichern.</p>
+    <form method="post" action="/admin/reset" class="shift-form"
+          onsubmit="return confirm('Wirklich alles löschen? Das kann nicht rückgängig gemacht werden.')">
+      <input type="hidden" name="csrf" value="<%= it.csrf %>">
+      <label class="checkbox"><input type="checkbox" name="include_areas" value="1">
+        Auch alle Bereiche löschen</label>
+      <label>Zum Bestätigen „<%= it.resetPhrase %>" eintippen
+        <input name="confirm" autocomplete="off" required placeholder="<%= it.resetPhrase %>"
+               pattern="\s*[Aa][Ll][Ll][Ee][Ss] [Ll][Öö][Ss][Cc][Hh][Ee][Nn]\s*"
+               title="Bitte genau „<%= it.resetPhrase %>" eintippen">
+      </label>
+      <button type="submit" class="danger">Alles löschen</button>
+    </form>
+  </section>
 </div>

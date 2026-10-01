@@ -105,3 +105,18 @@ export function areaStats(db) {
     .all()
     .map((r) => ({ ...r, free: Math.max(0, r.capacity - r.taken) }));
 }
+
+// Neustart für die nächste Con: alle Schichten samt Anmeldungen löschen,
+// optional auch die Bereiche. Branding/Einstellungen bleiben erhalten.
+export function resetAll(db, { includeAreas = false } = {}) {
+  db.exec('BEGIN');
+  try {
+    db.exec('DELETE FROM signups;');
+    db.exec('DELETE FROM shifts;');
+    if (includeAreas) db.exec('DELETE FROM areas;');
+    db.exec('COMMIT');
+  } catch (err) {
+    db.exec('ROLLBACK');
+    throw err;
+  }
+}
