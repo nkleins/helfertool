@@ -28,7 +28,7 @@ Danach unter `<BASE_URL>/admin` mit **`admin` / `admin`** einloggen – beim ers
 sofort ein eigenes Passwort gesetzt werden. Alles Weitere (Name, Logo, Bereiche, Accounts)
 wird im Admin-Bereich eingestellt.
 
-Die App lauscht auf `127.0.0.1:8080`. Für HTTPS einen Reverse-Proxy davorsetzen; eine
+Die App lauscht auf `127.0.0.1:<PORT>` (Standard 8080, einstellbar über `PORT` in der `.env`). Für HTTPS einen Reverse-Proxy davorsetzen; eine
 Beispielkonfiguration für nginx liegt in `nginx/` (Domain und Port anpassen, dann
 `certbot --nginx -d <domain>`).
 

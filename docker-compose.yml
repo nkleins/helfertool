@@ -3,7 +3,9 @@ services:
     build: .
     restart: unless-stopped
     env_file: .env
+    # Port kommt aus PORT in der .env (Standard 8080) und ist nur lokal erreichbar –
+    # davor gehört ein Reverse-Proxy (nginx, Caddy, …) für HTTPS.
     ports:
-      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:${PORT:-8080}:${PORT:-8080}"
     volumes:
       - ./data:/data
