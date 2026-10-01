@@ -5,7 +5,8 @@
       <a href="/admin/shifts/new">+ Schichten erzeugen</a> ·
       <a href="/admin/areas">Bereiche</a> ·
       <a href="/admin/qr">QR</a> ·
-      <a href="/admin/export.csv">CSV</a>
+      <a href="/admin/export.csv">CSV</a> ·
+      <a href="/admin/settings">Einstellungen</a>
       <form method="post" action="/admin/logout" class="inline">
         <input type="hidden" name="csrf" value="<%= it.csrf %>"><button type="submit">Logout</button>
       </form>

@@ -72,3 +72,21 @@ export function validateGenerateInput(body) {
 
   return { ok: true, value: { area_id, title: title === '' ? null : title.slice(0, MAX), date, from, to, slotMinutes, capacity, notes: orNull(body.notes), is_orga: body.is_orga ? 1 : 0, requires_phone: body.requires_phone ? 1 : 0 } };
 }
+
+export function validateSettingsInput(body) {
+  const errors = [];
+  const event_name = clean(body.event_name);
+  let accent_color = clean(body.accent_color);
+  if (event_name === '') errors.push('Name der Veranstaltung/Seite ist erforderlich.');
+  if (accent_color === '') accent_color = '#4fd1a5';
+  else if (!HEX.test(accent_color)) errors.push('Akzentfarbe muss ein Hex-Wert wie #4fd1a5 sein.');
+  if (errors.length) return { ok: false, errors };
+  return { ok: true, value: {
+    event_name: event_name.slice(0, MAX),
+    org_name: clean(body.org_name).slice(0, MAX),
+    motto: clean(body.motto).slice(0, MAX),
+    footer: clean(body.footer).slice(0, MAX),
+    accent_color,
+    show_logo: body.show_logo ? '1' : '0',
+  } };
+}

@@ -1,0 +1,48 @@
+<div class="admin">
+  <div class="admin-bar">
+    <h2>Einstellungen</h2>
+    <div class="admin-actions"><a href="/admin">← Dashboard</a></div>
+  </div>
+  <% if (it.saved) { %><p class="saved">Gespeichert.</p><% } %>
+  <% if (it.errors && it.errors.length) { %>
+    <div class="errors"><% it.errors.forEach(function(e){ %><p><%= e %></p><% }) %></div>
+  <% } %>
+
+  <form method="post" action="/admin/settings" enctype="multipart/form-data" class="shift-form">
+    <input type="hidden" name="csrf" value="<%= it.csrf %>">
+
+    <label>Name der Seite / Veranstaltung
+      <input name="event_name" value="<%= it.values.event_name %>" required maxlength="500"
+             placeholder="z.B. Disco-Dienste">
+    </label>
+    <label>Name der Con / des Vereins (optional)
+      <input name="org_name" value="<%= it.values.org_name %>" maxlength="500" placeholder="z.B. Kölnvention">
+    </label>
+    <label>Motto / Datum unter der Überschrift (optional)
+      <input name="motto" value="<%= it.values.motto %>" maxlength="500" placeholder="z.B. 25.–27.09.26">
+    </label>
+    <label>Fußzeile (optional)
+      <input name="footer" value="<%= it.values.footer %>" maxlength="500" placeholder="z.B. Kölnvention e.V.">
+    </label>
+    <label>Akzentfarbe
+      <input type="color" name="accent_color" value="<%= it.values.accent_color %>">
+    </label>
+
+    <fieldset>
+      <legend>Logo</legend>
+      <img src="/logo?preview=<%= Date.now() %>" alt="Aktuelles Logo" class="logo-preview"
+           onerror="this.style.display='none'">
+      <label class="checkbox"><input type="checkbox" name="show_logo" value="1"
+        <%= it.values.show_logo === '1' ? 'checked' : '' %>> Logo im Kopfbereich anzeigen</label>
+      <label>Neues Logo hochladen (PNG, JPG, GIF oder WebP, max. 2 MB)
+        <input type="file" name="logo" accept="image/png,image/jpeg,image/gif,image/webp">
+      </label>
+      <% if (it.hasCustomLogo) { %>
+        <label class="checkbox"><input type="checkbox" name="remove_logo" value="1">
+          Hochgeladenes Logo entfernen (Standard-Logo verwenden)</label>
+      <% } %>
+    </fieldset>
+
+    <button type="submit">Speichern</button>
+  </form>
+</div>

@@ -49,4 +49,11 @@ unter `/admin/shifts/new` per Zeitfenster (Datum, von/bis, Slot-Länge, Kapazit�
 Die öffentliche Seite `/` zeigt pro Bereich einen Stundenplan zum Anmelden; `/meine` zeigt
 gerätebasiert (Cookie) die eigenen Anmeldungen zum Nachschauen und Abmelden.
 
+### Branding / für andere Conventions nutzen
+Unter `/admin/settings` (im Dashboard „Einstellungen") lassen sich ohne Code-Änderung anpassen:
+Name der Seite (z.B. „Disco-Dienste"), Name der Con, Motto/Datum, Fußzeile, Akzentfarbe und
+das Logo (Upload als PNG/JPG/GIF/WebP, max. 2 MB). Logo und Einstellungen liegen in der
+SQLite-DB – eine andere Con kann das Repo also einfach klonen, `.env` anlegen,
+`docker compose up -d --build` starten und alles Weitere im Admin-Bereich einstellen.
+
 Die SQLite-DB liegt in `./data/app.db` (Docker-Volume) – für Backups einfach diese Datei sichern.

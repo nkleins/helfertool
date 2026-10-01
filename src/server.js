@@ -5,8 +5,10 @@ import formbody from '@fastify/formbody';
 import cookie from '@fastify/cookie';
 import fastifyStatic from '@fastify/static';
 import rateLimit from '@fastify/rate-limit';
+import multipart from '@fastify/multipart';
 import { Eta } from 'eta';
 import { createDb } from './db.js';
+import { getSettings, getLogo } from './repositories/settings.js';
 import { loadConfig } from './config.js';
 import { getSession, createSession } from './auth.js';
 import { registerPublicRoutes } from './routes/public.js';
@@ -15,6 +17,8 @@ import { registerAdminRoutes } from './routes/admin.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const viewsDir = path.join(__dirname, 'views');
 const publicDir = path.join(__dirname, '..', 'public');
+const DEFAULT_LOGO = 'Logo_weiss-1_2.png';
+export const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 
 export function buildApp(config, db) {
   const app = Fastify({ logger: false });
@@ -23,6 +27,7 @@ export function buildApp(config, db) {
   app.register(formbody);
   app.register(cookie, { secret: config.sessionSecret });
   app.register(rateLimit, { global: false });
+  app.register(multipart, { limits: { fileSize: MAX_LOGO_BYTES, files: 1, fields: 20 } });
   app.register(fastifyStatic, {
     root: path.join(publicDir, 'assets'),
     prefix: '/assets/',
@@ -35,8 +40,21 @@ export function buildApp(config, db) {
   app.decorate('config', config);
   app.decorate('db', db);
   app.decorate('render', (view, data) => {
-    const body = eta.render(view, data);
-    return eta.render('layout', { ...data, body });
+    const brand = getSettings(db);
+    const logo = getLogo(db);
+    brand.logoUrl = logo ? `/logo?v=${encodeURIComponent(logo.updated_at)}` : '/logo';
+    const body = eta.render(view, { ...data, brand });
+    return eta.render('layout', { ...data, brand, body });
+  });
+
+  // Hochgeladenes Logo aus der DB, sonst das mitgelieferte Standard-Logo.
+  app.get('/logo', (req, reply) => {
+    const logo = getLogo(db);
+    if (!logo) return reply.sendFile(DEFAULT_LOGO, path.join(publicDir, 'assets'));
+    reply.header('Content-Type', logo.mime)
+      .header('Cache-Control', 'public, max-age=300')
+      .header('X-Content-Type-Options', 'nosniff')
+      .send(Buffer.from(logo.data));
   });
 
   // Session-Middleware: sorgt dafür, dass jede Anfrage eine Session hat.

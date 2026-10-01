@@ -3,7 +3,8 @@ import { verifyPassword, createSession, deleteSession } from '../auth.js';
 import { requireCsrf, rateLimiter } from '../server.js';
 import { getShift, updateShift, deleteShift, listShifts, generateShifts, planSlots, areaStats, deleteShiftsByAreaDay } from '../repositories/shifts.js';
 import { listSignupsByShift, createSignup, deleteSignup, updateSignup, listAllSignups } from '../repositories/signups.js';
-import { validateShiftInput, validateSignupInput, validateAreaInput, validateGenerateInput } from '../validate.js';
+import { validateShiftInput, validateSignupInput, validateAreaInput, validateGenerateInput, validateSettingsInput } from '../validate.js';
+import { getSettings, saveSettings, getLogo, setLogo, clearLogo, detectImageMime } from '../repositories/settings.js';
 import { listAreas, createArea, getArea, updateArea, deleteArea } from '../repositories/areas.js';
 import { signupsCsv } from '../csv.js';
 import { formatTime, formatDay } from '../display.js';
@@ -266,5 +267,59 @@ export function registerAdminRoutes(app) {
     if (!requireCsrf(req, reply)) return;
     deleteArea(db, Number(req.params.id));
     return reply.redirect('/admin/areas');
+  });
+
+  function renderSettings(req, reply, { values, errors = [], saved = false }) {
+    return reply.code(200).type('text/html').send(app.render('admin-settings', {
+      title: 'Einstellungen', csrf: req.session.csrf, values, errors, saved,
+      hasCustomLogo: Boolean(getLogo(db)),
+    }));
+  }
+
+  app.get('/admin/settings', (req, reply) => {
+    if (!requireAdmin(req, reply)) return;
+    return renderSettings(req, reply, { values: getSettings(db), saved: req.query.saved === '1' });
+  });
+
+  app.post('/admin/settings', async (req, reply) => {
+    if (!requireAdmin(req, reply)) return;
+    const body = {};
+    let file = null;
+    if (req.isMultipart()) {
+      try {
+        for await (const part of req.parts()) {
+          if (part.type === 'file') {
+            const buf = await part.toBuffer();
+            if (buf.length) file = buf;
+          } else {
+            body[part.fieldname] = part.value;
+          }
+        }
+      } catch (err) {
+        if (err.code === 'FST_REQ_FILE_TOO_LARGE') {
+          return renderSettings(req, reply, { values: getSettings(db), errors: ['Das Logo ist zu groß (max. 2 MB).'] });
+        }
+        throw err;
+      }
+    } else {
+      Object.assign(body, req.body);
+    }
+    req.body = body;
+    if (!requireCsrf(req, reply)) return;
+
+    const v = validateSettingsInput(body);
+    const errors = v.ok ? [] : [...v.errors];
+    let mime = null;
+    if (file) {
+      mime = detectImageMime(file);
+      if (!mime) errors.push('Logo muss ein PNG-, JPG-, GIF- oder WebP-Bild sein.');
+    }
+    if (errors.length) {
+      return renderSettings(req, reply, { values: { ...getSettings(db), ...body }, errors });
+    }
+    saveSettings(db, v.value);
+    if (body.remove_logo) clearLogo(db);
+    else if (file) setLogo(db, { mime, data: file });
+    return reply.redirect('/admin/settings?saved=1');
   });
 }

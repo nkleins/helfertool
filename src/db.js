@@ -63,6 +63,16 @@ export function initSchema(db) {
       csrf       TEXT NOT NULL,
       expires_at TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS settings (
+      key   TEXT PRIMARY KEY,
+      value TEXT
+    );
+    CREATE TABLE IF NOT EXISTS uploads (
+      name       TEXT PRIMARY KEY,
+      mime       TEXT NOT NULL,
+      data       BLOB NOT NULL,
+      updated_at TEXT NOT NULL
+    );
     CREATE TABLE IF NOT EXISTS signups (
       id           INTEGER PRIMARY KEY,
       shift_id     INTEGER NOT NULL REFERENCES shifts(id) ON DELETE CASCADE,

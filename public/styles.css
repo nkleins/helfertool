@@ -146,3 +146,8 @@ th, td { border: 1px solid var(--line); padding: .5rem; text-align: left; font-s
   .progress-row .pct { grid-column: 1 / -1; }
   .area-form { grid-auto-flow: row; grid-template-columns: 1fr; }
 }
+
+/* Einstellungen */
+fieldset { border: 1px solid var(--line); border-radius: 8px; padding: .6rem; display: grid; gap: .55rem; }
+.logo-preview { max-width: 150px; height: auto; background: #0f1114; padding: .4rem; border-radius: 8px; }
+.saved { color: var(--accent); font-weight: 700; }

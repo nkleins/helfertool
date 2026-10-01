@@ -3,17 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title><%= it.title %> · Kölnvention Helfer</title>
+  <title><%= it.title %> · <%= it.brand.event_name %></title>
   <link rel="stylesheet" href="/styles.css">
+  <style>:root { --accent: <%= it.brand.accent_color %>; --free: <%= it.brand.accent_color %>; }</style>
 </head>
 <body>
   <header class="site-header">
-    <img src="/assets/Logo_weiss-1_2.png" alt="Kölnvention e.V." class="logo"
+    <% if (it.brand.show_logo === '1') { %>
+    <img src="<%= it.brand.logoUrl %>" alt="<%= it.brand.org_name || it.brand.event_name %>" class="logo"
          onerror="this.style.display='none'">
-    <h1>Arbeitsbeschaffungsmaßnahmen · Kölnvention</h1>
-    <p class="motto">Juggling's not dead · 25.–27.09.26</p>
+    <% } %>
+    <h1><%= it.brand.event_name %><% if (it.brand.org_name) { %> · <%= it.brand.org_name %><% } %></h1>
+    <% if (it.brand.motto) { %><p class="motto"><%= it.brand.motto %></p><% } %>
   </header>
   <main><%~ it.body %></main>
-  <footer class="site-footer">Kölnvention e.V.</footer>
+  <% if (it.brand.footer) { %><footer class="site-footer"><%= it.brand.footer %></footer><% } %>
 </body>
 </html>
