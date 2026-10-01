@@ -195,3 +195,11 @@ fieldset.plain { border: 0; padding: 0; margin: 0; }
   color: var(--ink); border: 1px solid var(--line); border-radius: 999px; padding: .2rem .65rem; background: var(--surface);
 }
 .lang-switch:hover { border-color: var(--accent); }
+
+/* Optionale englische Felder */
+.en-fields { border: 1px dashed var(--line); border-radius: 8px; padding: .4rem .6rem; }
+.en-fields summary { cursor: pointer; color: var(--muted); font-size: .9rem; }
+.en-fields[open] { display: grid; gap: .45rem; }
+.en-fields input { width: 100%; margin-top: .3rem; }
+.area-form .area-en { grid-column: 1 / -1; }
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }

@@ -60,8 +60,8 @@ export function listByToken(db, token) {
   return db
     .prepare(
       `SELECT g.id AS signup_id, g.name, g.note,
-              a.name AS area_name, a.color AS area_color,
-              s.title, s.starts_at, s.ends_at
+              a.name AS area_name, a.name_en AS area_name_en, a.color AS area_color,
+              s.title, s.title_en, s.starts_at, s.ends_at
        FROM signups g JOIN shifts s ON s.id = g.shift_id JOIN areas a ON a.id = s.area_id
        WHERE g.device_token = ?
        ORDER BY s.starts_at`

@@ -61,6 +61,12 @@
     <label>Plätze pro Schicht <input type="number" min="1" name="capacity" value="<%= it.values.capacity || 2 %>" required></label>
     <label class="checkbox"><input type="checkbox" name="requires_phone" value="1" <%= it.values.requires_phone ? 'checked' : '' %>> Telefonnummer ist bei dieser Schicht Pflicht</label>
     <label>Notiz (optional, an alle) <input name="notes" value="<%= it.values.notes || '' %>"></label>
+    <details class="en-fields"<%= (it.values.title_en || it.values.notes_en) ? ' open' : '' %>>
+      <summary>English (optional)</summary>
+      <p class="hint">Wird angezeigt, wenn jemand die Seite auf Englisch stellt. Leer lassen = deutscher Text.</p>
+      <label>Title <input name="title_en" value="<%= it.values.title_en || '' %>" maxlength="500"></label>
+      <label>Note <input name="notes_en" value="<%= it.values.notes_en || '' %>" maxlength="500"></label>
+    </details>
     <button type="submit">Schichten erzeugen</button>
     <a href="/admin">Abbrechen</a>
   </form>

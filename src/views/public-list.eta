@@ -43,7 +43,7 @@
     <% a.shifts.forEach(function(s){ %>
       <div class="slot <%= s.free <= 0 ? 'slot-full' : 'slot-free' %><%= s.isPast ? ' is-past' : '' %>"
            data-day="<%= s.day %>"
-           data-search="<%= [a.name, s.title || '', s.notes || ''].concat(s.people.map(function(p){ return p.display; })).join(' ').toLowerCase() %>">
+           data-search="<%= [a.searchText, s.searchText].concat(s.people.map(function(p){ return p.display; })).join(' ').toLowerCase() %>">
         <div class="slot-time"><span class="day"><%= s.dayLabel %></span><strong><%= s.time %></strong></div>
         <div class="slot-body">
           <% if (s.isPast) { %><span class="past-badge"><%= it.t('slot.past') %></span><% } %>

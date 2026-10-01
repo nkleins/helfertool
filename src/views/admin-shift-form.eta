@@ -19,6 +19,12 @@
     <label class="checkbox"><input type="checkbox" name="is_orga" value="1" <%= it.shift.is_orga ? 'checked' : '' %>> Orgaschicht (unter /orga, mit Telefonnummer)</label>
     <label class="checkbox"><input type="checkbox" name="requires_phone" value="1" <%= it.shift.requires_phone ? 'checked' : '' %>> Telefonnummer Pflicht</label>
     <label>Notiz <input name="notes" value="<%= it.shift.notes || '' %>"></label>
+    <details class="en-fields"<%= (it.shift.title_en || it.shift.notes_en) ? ' open' : '' %>>
+      <summary>English (optional)</summary>
+      <p class="hint">Wird angezeigt, wenn jemand die Seite auf Englisch stellt. Leer lassen = deutscher Text.</p>
+      <label>Title <input name="title_en" value="<%= it.shift.title_en || '' %>" maxlength="500"></label>
+      <label>Note <input name="notes_en" value="<%= it.shift.notes_en || '' %>" maxlength="500"></label>
+    </details>
     <button type="submit">Speichern</button>
     <a href="/admin">Abbrechen</a>
   </form>

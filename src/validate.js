@@ -24,7 +24,7 @@ export function validateAreaInput(body) {
   else if (!HEX.test(color)) errors.push('Farbe muss ein Hex-Wert wie #33aa88 sein.');
   const sort_order = Number.parseInt(body.sort_order, 10);
   if (errors.length) return { ok: false, errors };
-  return { ok: true, value: { name, color, sort_order: Number.isInteger(sort_order) ? sort_order : 0, description: orNull(body.description) } };
+  return { ok: true, value: { name, color, sort_order: Number.isInteger(sort_order) ? sort_order : 0, description: orNull(body.description), name_en: orNull(body.name_en), description_en: orNull(body.description_en) } };
 }
 
 export function validateShiftInput(body) {
@@ -42,7 +42,7 @@ export function validateShiftInput(body) {
   if (starts_at && ends_at && ends_at <= starts_at) errors.push('Ende muss nach dem Start liegen.');
   if (errors.length) return { ok: false, errors };
 
-  return { ok: true, value: { area_id, title: title === '' ? null : title.slice(0, MAX), starts_at, ends_at, capacity, notes: orNull(body.notes), is_orga: body.is_orga ? 1 : 0, requires_phone: body.requires_phone ? 1 : 0 } };
+  return { ok: true, value: { area_id, title: title === '' ? null : title.slice(0, MAX), starts_at, ends_at, capacity, notes: orNull(body.notes), is_orga: body.is_orga ? 1 : 0, requires_phone: body.requires_phone ? 1 : 0, title_en: orNull(body.title_en), notes_en: orNull(body.notes_en) } };
 }
 
 export function validateGenerateInput(body) {
@@ -70,7 +70,7 @@ export function validateGenerateInput(body) {
   if (!Number.isInteger(capacity) || capacity < 1) errors.push('Plätze müssen mindestens 1 sein.');
   if (errors.length) return { ok: false, errors };
 
-  return { ok: true, value: { area_id, title: title === '' ? null : title.slice(0, MAX), date, from, to, slotMinutes, capacity, notes: orNull(body.notes), is_orga: body.is_orga ? 1 : 0, requires_phone: body.requires_phone ? 1 : 0 } };
+  return { ok: true, value: { area_id, title: title === '' ? null : title.slice(0, MAX), date, from, to, slotMinutes, capacity, notes: orNull(body.notes), is_orga: body.is_orga ? 1 : 0, requires_phone: body.requires_phone ? 1 : 0, title_en: orNull(body.title_en), notes_en: orNull(body.notes_en) } };
 }
 
 export function validateSettingsInput(body) {

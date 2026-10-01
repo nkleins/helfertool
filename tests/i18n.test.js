@@ -71,3 +71,23 @@ test('Beide Sprachen haben dieselben Schlüssel', () => {
     assert.notEqual(de(key), en(key));
   }
 });
+
+test('Englische Texte für Bereiche/Schichten mit Rückfall auf Deutsch', async () => {
+  const { app, db } = await makeApp();
+  const kitchen = seedArea(db, { name: 'Küche', name_en: 'Kitchen', description: 'Hinten links', description_en: 'Back left' });
+  const bar = seedArea(db, { name: 'Bar' });
+  createShift(db, { area_id: kitchen, title: 'Spülen', title_en: 'Dishes', starts_at: '2099-09-25T08:00', ends_at: '2099-09-25T09:00', capacity: 2, notes: 'Schürze mitbringen', notes_en: null });
+  createShift(db, { area_id: bar, title: 'Theke', starts_at: '2099-09-25T18:00', ends_at: '2099-09-25T19:00', capacity: 2, notes: null });
+  const en = await app.inject({ method: 'GET', url: '/', headers: { cookie: 'lang=en' } });
+  assert.match(en.body, />Kitchen</);
+  assert.match(en.body, /Back left/);
+  assert.match(en.body, />Dishes</);
+  assert.match(en.body, /Schürze mitbringen/); // keine Übersetzung → Deutsch
+  assert.match(en.body, />Theke</);
+  assert.match(en.body, /data-search="[^"]*küche[^"]*spülen/); // Suche findet beide Sprachen
+  const de = await app.inject({ method: 'GET', url: '/', headers: { cookie: 'lang=de' } });
+  assert.match(de.body, />Küche</);
+  assert.match(de.body, />Spülen</);
+  assert.doesNotMatch(de.body, /Back left/);
+  await app.close();
+});

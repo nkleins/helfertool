@@ -169,3 +169,23 @@ test('Hauptadmin kann nicht gelöscht werden und Benutzernamen sind eindeutig', 
   assert.match(page.body, /Hauptadmin/);
   await app.close();
 });
+
+test('Hauptadmin kann Rechte und Bereiche nachträglich ändern', async () => {
+  const { app, db, owner, team, bar, kueche, kuecheShift } = await teamSetup(['signups']);
+  const id = getUserByName(db, 'barteam').id;
+  // Rechte erweitern: Schichten + Küche dazu
+  const r = await app.inject({ method: 'POST', url: `/admin/users/${id}`, headers: { cookie: owner.cookie },
+    payload: { csrf: owner.csrf, username: 'barteam', perms: ['signups', 'shifts'], area_scope: 'some', areas: [String(bar), String(kueche)] } });
+  assert.equal(r.statusCode, 302);
+  const edit = await app.inject({ method: 'GET', url: `/admin/shifts/${kuecheShift}/edit`, headers: { cookie: team.cookie } });
+  assert.equal(edit.statusCode, 200); // gilt sofort, ohne neu einloggen
+  // Rechte wieder entziehen
+  await app.inject({ method: 'POST', url: `/admin/users/${id}`, headers: { cookie: owner.cookie },
+    payload: { csrf: owner.csrf, username: 'barteam', area_scope: 'some', areas: String(bar) } });
+  const u = getUserByName(db, 'barteam');
+  assert.deepEqual(u.perms, []);
+  assert.deepEqual(u.areaIds, [bar]);
+  const again = await app.inject({ method: 'GET', url: `/admin/shifts/${kuecheShift}/edit`, headers: { cookie: team.cookie } });
+  assert.equal(again.statusCode, 403);
+  await app.close();
+});

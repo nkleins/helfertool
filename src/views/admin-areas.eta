@@ -14,8 +14,14 @@
     <input type="number" name="sort_order" value="0" aria-label="Reihenfolge" style="width:5rem">
     <input name="description" placeholder="Beschreibung (optional)" maxlength="500">
     <button type="submit">Anlegen</button>
+    <details class="en-fields area-en">
+      <summary>English (optional)</summary>
+      <input name="name_en" placeholder="Name auf Englisch (z.B. Kitchen)" maxlength="500">
+      <input name="description_en" placeholder="Beschreibung auf Englisch" maxlength="500">
+    </details>
   </form>
 
+  <div class="table-scroll">
   <table>
     <thead><tr><th>Bereich</th><th>Farbe</th><th>Reihenfolge</th><th>Beschreibung</th><th></th></tr></thead>
     <tbody>
@@ -26,7 +32,13 @@
           <td><input name="name" value="<%= a.name %>" maxlength="500"></td>
           <td><input type="color" name="color" value="<%= a.color %>"></td>
           <td><input type="number" name="sort_order" value="<%= a.sort_order %>" style="width:5rem"></td>
-          <td><input name="description" value="<%= a.description || '' %>" maxlength="500"></td>
+          <td><input name="description" value="<%= a.description || '' %>" maxlength="500">
+            <details class="en-fields"<%= (a.name_en || a.description_en) ? ' open' : '' %>>
+              <summary>English</summary>
+              <input name="name_en" value="<%= a.name_en || '' %>" placeholder="Name" maxlength="500" aria-label="Name (English)">
+              <input name="description_en" value="<%= a.description_en || '' %>" placeholder="Description" maxlength="500" aria-label="Description (English)">
+            </details>
+          </td>
           <td>
             <button type="submit">Speichern</button>
           </td>
@@ -42,4 +54,5 @@
     <% }) %>
     </tbody>
   </table>
+  </div>
 </div>

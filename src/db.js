@@ -116,6 +116,10 @@ export function initSchema(db) {
   if (!columnNames(db, 'areas').includes('description')) {
     db.exec('ALTER TABLE areas ADD COLUMN description TEXT;');
   }
+  // Optionale englische Texte (leer = deutscher Text wird angezeigt).
+  for (const [table, col] of [['areas', 'name_en'], ['areas', 'description_en'], ['shifts', 'title_en'], ['shifts', 'notes_en']]) {
+    if (!columnNames(db, table).includes(col)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} TEXT;`);
+  }
   if (!columnNames(db, 'shifts').includes('is_orga')) {
     db.exec('ALTER TABLE shifts ADD COLUMN is_orga INTEGER NOT NULL DEFAULT 0;');
   }
