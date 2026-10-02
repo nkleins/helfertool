@@ -12,5 +12,6 @@ export function loadConfig(env = process.env) {
     dbPath: env.DB_PATH ?? '/data/app.db',
     secureCookie: baseUrl.startsWith('https'),
     timeZone: env.TIMEZONE ?? 'Europe/Berlin',
+    sourceUrl: env.SOURCE_URL || null,
   };
 }

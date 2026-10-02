@@ -50,8 +50,9 @@ export function buildApp(config, db) {
     brand.logoUrl = logoVersion ? `/logo?v=${encodeURIComponent(logoVersion)}` : '/logo';
     const lang = data.lang ?? 'de';
     const t = translator(lang);
+    const sourceUrl = config.sourceUrl;
     const body = eta.render(view, { ...data, brand, lang, t });
-    return eta.render('layout', { ...data, brand, lang, t, body });
+    return eta.render('layout', { ...data, brand, lang, t, sourceUrl, body });
   });
 
   // Ältere Browser fragen ohne <link rel="icon"> direkt nach /favicon.ico.

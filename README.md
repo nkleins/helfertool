@@ -50,6 +50,7 @@ Alles – Schichten, Anmeldungen, Accounts, Einstellungen und Logo – liegt in 
 | `ADMIN_USER`, `ADMIN_PASSWORD_HASH` | Optional. Nur beim allerersten Start: legt den Hauptadmin mit diesen Daten an statt `admin`/`admin`. Hash erzeugen mit `node scripts/hash-password.mjs "PASSWORT"`. |
 | `TIMEZONE` | Zeitzone der Veranstaltung, Standard `Europe/Berlin`. |
 | `PORT`, `DB_PATH` | Standard `8080` und `/data/app.db`. |
+| `SOURCE_URL` | Optional. Link zum Quellcode in der Fußzeile (für veränderte Versionen nach AGPL nötig). |
 
 ## Accounts & Rechte
 - Der **Hauptadmin** darf alles, verwaltet unter „Benutzer" die anderen Accounts und kann
@@ -66,6 +67,18 @@ Alles – Schichten, Anmeldungen, Accounts, Einstellungen und Logo – liegt in 
 3. **Schichten erzeugen**: Bereich, Datum, Von/Bis, Schichtlänge und Plätze wählen.
    Liegt „Bis" vor „Von", geht das Zeitfenster über Mitternacht.
 4. **QR-Code** ausdrucken und aushängen – er führt auf den Schichtplan.
+
+## Lizenz
+Copyright © 2026 Nikolai Kleinschmidt
+
+Dieses Programm ist freie Software unter der **GNU Affero General Public License v3.0**
+(oder einer späteren Version), siehe [`LICENSE`](LICENSE). Kurz gesagt: Jede:r darf das Tool
+nutzen, verändern und weitergeben. Wer eine veränderte Version öffentlich betreibt, muss den
+geänderten Quellcode ebenfalls unter der AGPL anbieten, z.B. über `SOURCE_URL` (Link in der
+Fußzeile).
+
+Das Tool wird **ohne Gewähr und ohne Support** bereitgestellt. Wer es betreibt, ist selbst für
+den Betrieb und die gespeicherten Daten (Namen, Telefonnummern) verantwortlich.
 
 ## Entwicklung
 ```bash

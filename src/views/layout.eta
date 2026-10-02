@@ -24,7 +24,8 @@
   <main><%~ it.body %></main>
   <footer class="site-footer">
     <% if (it.brand.footer) { %><div><%= it.brand.footer %></div><% } %>
-    <div class="credit">Helfertool © <%= new Date().getFullYear() %> Nikolai Kleinschmidt</div>
+    <div class="credit">Helfertool © <%= new Date().getFullYear() %> Nikolai Kleinschmidt
+      <% if (it.sourceUrl) { %>· <a href="<%= it.sourceUrl %>" rel="noopener">Quellcode (AGPL)</a><% } %></div>
   </footer>
 </body>
 </html>
