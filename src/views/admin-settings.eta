@@ -1,70 +1,77 @@
 <div class="admin">
   <div class="admin-bar">
-    <h2>Einstellungen</h2>
-    <div class="admin-actions"><a href="/admin">← Dashboard</a> · <a href="/admin/password">Mein Passwort ändern</a><% if (it.me.is_owner) { %> · <a href="/admin/users">Benutzer verwalten</a><% } %></div>
+    <h2><%= it.t('settings.title') %></h2>
+    <div class="admin-actions"><a href="/admin"><%= it.t('nav.back') %></a> · <a href="/admin/password"><%= it.t('settings.myPassword') %></a><% if (it.me.is_owner) { %> · <a href="/admin/users"><%= it.t('settings.manageUsers') %></a><% } %></div>
   </div>
-  <% if (it.saved) { %><p class="saved">Gespeichert.</p><% } %>
+  <% if (it.saved) { %><p class="saved"><%= it.t('common.saved') %></p><% } %>
   <%~ include('errors', it) %>
 
-  <% if (!it.can('settings_edit')) { %><p class="hint">Du kannst die Einstellungen nur ansehen.</p><% } %>
+  <% if (!it.can('settings_edit')) { %><p class="hint"><%= it.t('settings.viewOnly') %></p><% } %>
   <form method="post" action="/admin/settings" enctype="multipart/form-data" class="shift-form">
     <input type="hidden" name="csrf" value="<%= it.csrf %>">
     <fieldset class="plain"<%= it.can('settings_edit') ? '' : ' disabled' %>>
 
-    <label>Name der Seite / Veranstaltung
-      <input name="event_name" value="<%= it.values.event_name %>" required maxlength="500"
-             placeholder="z.B. Disco-Dienste">
+    <label><%= it.t('settings.eventName') %>
+      <input name="event_name" value="<%= it.values.event_name %>" required maxlength="500" placeholder="<%= it.t('settings.eventNameExample') %>">
     </label>
-    <label>Name der Con / des Vereins (optional)
-      <input name="org_name" value="<%= it.values.org_name %>" maxlength="500" placeholder="z.B. Meine Convention">
+    <label><%= it.t('settings.orgName') %>
+      <input name="org_name" value="<%= it.values.org_name %>" maxlength="500" placeholder="<%= it.t('settings.orgNameExample') %>">
     </label>
-    <label>Motto / Datum unter der Überschrift (optional)
-      <input name="motto" value="<%= it.values.motto %>" maxlength="500" placeholder="z.B. 25.–27.09.26">
+    <label><%= it.t('settings.motto') %>
+      <input name="motto" value="<%= it.values.motto %>" maxlength="500" placeholder="<%= it.t('settings.mottoExample') %>">
     </label>
-    <label>Fußzeile (optional)
-      <input name="footer" value="<%= it.values.footer %>" maxlength="500" placeholder="z.B. Mein Verein e.V.">
+    <label><%= it.t('settings.footer') %>
+      <input name="footer" value="<%= it.values.footer %>" maxlength="500" placeholder="<%= it.t('settings.footerExample') %>">
     </label>
-    <label>Akzentfarbe
+    <label><%= it.t('settings.accent') %>
       <input type="color" name="accent_color" value="<%= it.values.accent_color %>">
     </label>
 
     <fieldset>
-      <legend>Logo</legend>
-      <img src="/logo?preview=<%= Date.now() %>" alt="Aktuelles Logo" class="logo-preview"
+      <legend><%= it.t('settings.logo') %></legend>
+      <img src="/logo?preview=<%= Date.now() %>" alt="<%= it.t('settings.logoCurrent') %>" class="logo-preview"
            onerror="this.style.display='none'">
       <label class="checkbox"><input type="checkbox" name="show_logo" value="1"
-        <%= it.values.show_logo === '1' ? 'checked' : '' %>> Logo im Kopfbereich anzeigen</label>
-      <label>Neues Logo hochladen (PNG, JPG, GIF oder WebP, max. 2 MB)
+        <%= it.values.show_logo === '1' ? 'checked' : '' %>> <%= it.t('settings.showLogo') %></label>
+      <label><%= it.t('settings.uploadLogo') %>
         <input type="file" name="logo" accept="image/png,image/jpeg,image/gif,image/webp">
       </label>
       <% if (it.hasCustomLogo) { %>
-        <label class="checkbox"><input type="checkbox" name="remove_logo" value="1">
-          Hochgeladenes Logo entfernen (Standard-Logo verwenden)</label>
+        <label class="checkbox"><input type="checkbox" name="remove_logo" value="1"> <%= it.t('settings.removeLogo') %></label>
       <% } %>
     </fieldset>
 
-    <% if (it.can('settings_edit')) { %><button type="submit">Speichern</button><% } %>
+    <fieldset>
+      <legend><%= it.t('settings.legal') %></legend>
+      <p class="hint"><%= it.t('settings.legalHint') %></p>
+      <label><%= it.t('settings.imprintUrl') %>
+        <input type="url" name="imprint_url" value="<%= it.values.imprint_url %>" maxlength="500" placeholder="https://…">
+      </label>
+      <label><%= it.t('settings.privacyUrl') %>
+        <input type="url" name="privacy_url" value="<%= it.values.privacy_url %>" maxlength="500" placeholder="https://…">
+      </label>
+      <label class="checkbox"><input type="checkbox" name="auto_delete" value="1"
+        <%= it.values.auto_delete === '1' ? 'checked' : '' %>> <%= it.t('settings.autoDelete') %></label>
+    </fieldset>
+
+    <% if (it.can('settings_edit')) { %><button type="submit"><%= it.t('common.save') %></button><% } %>
     </fieldset>
   </form>
 
   <% if (it.me.is_owner) { %>
   <section class="danger-zone" id="reset">
-    <h3>Neu anfangen (für die nächste Con)</h3>
-    <% if (it.resetDone) { %><p class="saved">Alle Schichten und Anmeldungen wurden gelöscht.</p><% } %>
-    <%~ include('errors', { errors: it.resetErrors }) %>
-    <p>Löscht <strong>alle Schichten und alle Anmeldungen</strong> endgültig. Name, Logo und
-      Einstellungen bleiben erhalten. Tipp: vorher den <a href="/admin/export.csv">CSV-Export</a> sichern.</p>
+    <h3><%= it.t('reset.title') %></h3>
+    <% if (it.resetDone) { %><p class="saved"><%= it.t('reset.done') %></p><% } %>
+    <%~ include('errors', { t: it.t, errors: it.resetErrors }) %>
+    <p><%~ it.t('reset.text') %></p>
     <form method="post" action="/admin/reset" class="shift-form"
-          onsubmit="return confirm('Wirklich alles löschen? Das kann nicht rückgängig gemacht werden.')">
+          data-confirm="<%= it.t('reset.confirm') %>" onsubmit="return confirm(this.dataset.confirm)">
       <input type="hidden" name="csrf" value="<%= it.csrf %>">
-      <label class="checkbox"><input type="checkbox" name="include_areas" value="1">
-        Auch alle Bereiche löschen</label>
-      <label>Zum Bestätigen „<%= it.resetPhrase %>" eintippen
-        <input name="confirm" autocomplete="off" required placeholder="<%= it.resetPhrase %>"
-               pattern="\s*[Aa][Ll][Ll][Ee][Ss] [Ll][Öö][Ss][Cc][Hh][Ee][Nn]\s*"
-               title="Bitte genau „<%= it.resetPhrase %>" eintippen">
+      <label class="checkbox"><input type="checkbox" name="include_areas" value="1"> <%= it.t('reset.includeAreas') %></label>
+      <label><%= it.t('reset.typePhrase', { phrase: it.resetPhrase }) %>
+        <input name="confirm" autocomplete="off" required placeholder="<%= it.resetPhrase %>">
       </label>
-      <button type="submit" class="danger">Alles löschen</button>
+      <button type="submit" class="danger"><%= it.t('reset.submit') %></button>
     </form>
   </section>
   <% } %>

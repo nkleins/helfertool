@@ -4,8 +4,9 @@ function cell(v) {
   return /[";\n]/.test(s) ? '"' + s.replaceAll('"', '""') + '"' : s;
 }
 
-export function signupsCsv(rows) {
-  const header = ['Bereich', 'Schicht', 'Beginn', 'Ende', 'Name', 'Telefon', 'Notiz'];
+const DEFAULT_HEADER = ['Bereich', 'Schicht', 'Beginn', 'Ende', 'Name', 'Telefon', 'Notiz'];
+
+export function signupsCsv(rows, header = DEFAULT_HEADER) {
   const lines = [header.join(';')];
   for (const r of rows) {
     lines.push([

@@ -1,51 +1,46 @@
 <div class="admin">
-  <div class="admin-bar">
-    <h2>Bereiche</h2>
-    <div class="admin-actions"><a href="/admin">← Dashboard</a></div>
-  </div>
+  <%~ include('admin-back', { t: it.t, heading: it.t('areas.title') }) %>
   <%~ include('errors', it) %>
 
   <form method="post" action="/admin/areas" class="area-form">
     <input type="hidden" name="csrf" value="<%= it.csrf %>">
-    <input name="name" placeholder="Neuer Bereich (z.B. Küche)" required maxlength="500">
-    <input type="color" name="color" value="#33aa88" aria-label="Farbe">
-    <input type="number" name="sort_order" value="0" aria-label="Reihenfolge" style="width:5rem">
-    <input name="description" placeholder="Beschreibung (optional)" maxlength="500">
-    <button type="submit">Anlegen</button>
+    <input name="name" placeholder="<%= it.t('areas.newPlaceholder') %>" required maxlength="500">
+    <input type="color" name="color" value="#33aa88" aria-label="<%= it.t('areas.color') %>">
+    <input type="number" name="sort_order" value="0" aria-label="<%= it.t('areas.order') %>" style="width:5rem">
+    <input name="description" placeholder="<%= it.t('areas.descPlaceholder') %>" maxlength="500">
+    <button type="submit"><%= it.t('areas.create') %></button>
     <details class="en-fields area-en">
-      <summary>English (optional)</summary>
-      <input name="name_en" placeholder="Name auf Englisch (z.B. Kitchen)" maxlength="500">
-      <input name="description_en" placeholder="Beschreibung auf Englisch" maxlength="500">
+      <summary><%= it.t('en.summary') %></summary>
+      <input name="name_en" placeholder="<%= it.t('areas.nameEnPlaceholder') %>" maxlength="500">
+      <input name="description_en" placeholder="<%= it.t('areas.descEnPlaceholder') %>" maxlength="500">
     </details>
   </form>
 
   <div class="table-scroll">
   <table>
-    <thead><tr><th>Bereich</th><th>Farbe</th><th>Reihenfolge</th><th>Beschreibung</th><th></th></tr></thead>
+    <thead><tr><th><%= it.t('areas.colArea') %></th><th><%= it.t('areas.color') %></th><th><%= it.t('areas.order') %></th><th><%= it.t('areas.colDesc') %></th><th></th><th></th></tr></thead>
     <tbody>
     <% it.areas.forEach(function(a){ %>
       <tr>
         <form method="post" action="/admin/areas/<%= a.id %>">
           <input type="hidden" name="csrf" value="<%= it.csrf %>">
-          <td><input name="name" value="<%= a.name %>" maxlength="500"></td>
-          <td><input type="color" name="color" value="<%= a.color %>"></td>
-          <td><input type="number" name="sort_order" value="<%= a.sort_order %>" style="width:5rem"></td>
-          <td><input name="description" value="<%= a.description || '' %>" maxlength="500">
+          <td><input name="name" value="<%= a.name %>" maxlength="500" aria-label="<%= it.t('areas.colArea') %>"></td>
+          <td><input type="color" name="color" value="<%= a.color %>" aria-label="<%= it.t('areas.color') %>"></td>
+          <td><input type="number" name="sort_order" value="<%= a.sort_order %>" style="width:5rem" aria-label="<%= it.t('areas.order') %>"></td>
+          <td><input name="description" value="<%= a.description || '' %>" maxlength="500" aria-label="<%= it.t('areas.colDesc') %>">
             <details class="en-fields"<%= (a.name_en || a.description_en) ? ' open' : '' %>>
               <summary>English</summary>
               <input name="name_en" value="<%= a.name_en || '' %>" placeholder="Name" maxlength="500" aria-label="Name (English)">
               <input name="description_en" value="<%= a.description_en || '' %>" placeholder="Description" maxlength="500" aria-label="Description (English)">
             </details>
           </td>
-          <td>
-            <button type="submit">Speichern</button>
-          </td>
+          <td><button type="submit"><%= it.t('common.save') %></button></td>
         </form>
         <td>
           <form method="post" action="/admin/areas/<%= a.id %>/delete" class="inline"
-                onsubmit="return confirm('Bereich und alle seine Schichten löschen?')">
+                data-confirm="<%= it.t('areas.deleteConfirm') %>" onsubmit="return confirm(this.dataset.confirm)">
             <input type="hidden" name="csrf" value="<%= it.csrf %>">
-            <button type="submit" class="danger">Löschen</button>
+            <button type="submit" class="danger"><%= it.t('common.delete') %></button>
           </form>
         </td>
       </tr>

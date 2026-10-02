@@ -91,7 +91,7 @@ test('validateGenerateInput erlaubt Über-Mitternacht (Bis vor Von), aber nicht 
   assert.equal(validateGenerateInput({ ...base, from: '22:00', to: '02:00' }).ok, true);
   const equal = validateGenerateInput({ ...base, from: '10:00', to: '10:00' });
   assert.equal(equal.ok, false);
-  assert.match(equal.errors.join(' '), /gleich/);
+  assert.ok(equal.errors.includes('v.sameTime'));
 });
 
 test('validateGenerateInput erlaubt nur volle/halbe Stunden für von/bis', () => {
@@ -99,6 +99,6 @@ test('validateGenerateInput erlaubt nur volle/halbe Stunden für von/bis', () =>
   assert.equal(validateGenerateInput({ ...base, from: '08:00', to: '10:30' }).ok, true);
   const bad = validateGenerateInput({ ...base, from: '08:15', to: '10:00' });
   assert.equal(bad.ok, false);
-  assert.match(bad.errors.join(' '), /vollen oder halben Stunde/);
+  assert.ok(bad.errors.includes('v.halfHour'));
   assert.equal(validateGenerateInput({ ...base, from: '08:00', to: '10:45' }).ok, false);
 });

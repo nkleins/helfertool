@@ -7,6 +7,10 @@ export const DEFAULT_SETTINGS = {
   footer: 'Kölnvention e.V.',
   accent_color: '#4fd1a5',
   show_logo: '1',
+  imprint_url: '',
+  privacy_url: '',
+  // Anmeldungen 14 Tage nach der letzten Schicht automatisch löschen (Datenschutz).
+  auto_delete: '1',
 };
 
 export function getSettings(db) {

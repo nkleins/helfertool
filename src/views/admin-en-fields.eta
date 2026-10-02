@@ -1,0 +1,6 @@
+<details class="en-fields"<%= (it.title_en || it.notes_en) ? ' open' : '' %>>
+  <summary><%= it.t('en.summary') %></summary>
+  <p class="hint"><%= it.t('en.hint') %></p>
+  <label>Title <input name="title_en" value="<%= it.title_en || '' %>" maxlength="500"></label>
+  <label>Note <input name="notes_en" value="<%= it.notes_en || '' %>" maxlength="500"></label>
+</details>

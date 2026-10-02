@@ -24,8 +24,15 @@
   <main><%~ it.body %></main>
   <footer class="site-footer">
     <% if (it.brand.footer) { %><div><%= it.brand.footer %></div><% } %>
+    <% if (it.brand.imprint_url || it.brand.privacy_url) { %>
+    <div class="legal">
+      <% if (it.brand.imprint_url) { %><a href="<%= it.brand.imprint_url %>" rel="noopener"><%= it.t('footer.imprint') %></a><% } %>
+      <% if (it.brand.imprint_url && it.brand.privacy_url) { %> · <% } %>
+      <% if (it.brand.privacy_url) { %><a href="<%= it.brand.privacy_url %>" rel="noopener"><%= it.t('footer.privacy') %></a><% } %>
+    </div>
+    <% } %>
     <div class="credit">Helfertool © <%= new Date().getFullYear() %> Nikolai Kleinschmidt
-      <% if (it.sourceUrl) { %>· <a href="<%= it.sourceUrl %>" rel="noopener">Quellcode (AGPL)</a><% } %></div>
+      <% if (it.sourceUrl) { %>· <a href="<%= it.sourceUrl %>" rel="noopener"><%= it.t('footer.source') %></a><% } %></div>
   </footer>
 </body>
 </html>

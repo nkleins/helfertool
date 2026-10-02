@@ -1,16 +1,16 @@
 <% var has = function (list, v) { return [].concat(list || []).map(String).indexOf(String(v)) !== -1; }; %>
 <fieldset>
-  <legend>Darf …</legend>
+  <legend><%= it.t('access.may') %></legend>
   <% it.permissions.forEach(function (p) { %>
-    <label class="checkbox"><input type="checkbox" name="perms" value="<%= p.key %>"<%= has(it.perms, p.key) ? ' checked' : '' %>> <%= p.label %></label>
+    <label class="checkbox"><input type="checkbox" name="perms" value="<%= p %>"<%= has(it.perms, p) ? ' checked' : '' %>> <%= it.t('perm.' + p) %></label>
   <% }) %>
-  <p class="hint">Dashboard, Schicht-Details und QR-Code sieht jeder Account (für seine Bereiche).</p>
+  <p class="hint"><%= it.t('access.everyone') %></p>
 </fieldset>
 <fieldset>
-  <legend>Sieht Bereiche</legend>
-  <label class="checkbox"><input type="radio" name="area_scope" value="all"<%= it.areaScope !== 'some' ? ' checked' : '' %>> Alle Bereiche (auch künftige)</label>
-  <label class="checkbox"><input type="radio" name="area_scope" value="some"<%= it.areaScope === 'some' ? ' checked' : '' %>> Nur diese:</label>
-  <% if (!it.areas.length) { %><p class="hint">Noch keine Bereiche angelegt.</p><% } %>
+  <legend><%= it.t('access.areas') %></legend>
+  <label class="checkbox"><input type="radio" name="area_scope" value="all"<%= it.areaScope !== 'some' ? ' checked' : '' %>> <%= it.t('access.allAreas') %></label>
+  <label class="checkbox"><input type="radio" name="area_scope" value="some"<%= it.areaScope === 'some' ? ' checked' : '' %>> <%= it.t('access.someAreas') %></label>
+  <% if (!it.areas.length) { %><p class="hint"><%= it.t('access.noAreas') %></p><% } %>
   <% it.areas.forEach(function (a) { %>
     <label class="checkbox area-pick"><input type="checkbox" name="areas" value="<%= a.id %>"<%= has(it.areaIds, a.id) ? ' checked' : '' %>> <span class="dot" style="background:<%= a.color %>"></span> <%= a.name %></label>
   <% }) %>

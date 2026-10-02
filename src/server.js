@@ -12,6 +12,7 @@ import { getSettings, getLogo, getLogoVersion } from './repositories/settings.js
 import { ensureOwner, getUser } from './repositories/users.js';
 import { translator, pickLang } from './i18n.js';
 import { loadConfig } from './config.js';
+import { startMaintenance } from './maintenance.js';
 import { getSession, createSession } from './auth.js';
 import { registerPublicRoutes } from './routes/public.js';
 import { registerAdminRoutes } from './routes/admin.js';
@@ -91,8 +92,9 @@ export function buildApp(config, db) {
   app.setErrorHandler((err, req, reply) => {
     console.error(err);
     const code = err.statusCode && err.statusCode < 500 ? err.statusCode : 500;
+    const t = translator(req.lang ?? 'de');
     reply.code(code).type('text/html')
-      .send('<!doctype html><meta charset="utf-8"><h1>Fehler</h1><p>Es ist ein Fehler aufgetreten. Bitte später erneut versuchen.</p>');
+      .send(`<!doctype html><meta charset="utf-8"><h1>${t('sys.errorTitle')}</h1><p>${t('sys.errorText')}</p>`);
   });
 
   registerPublicRoutes(app);
@@ -103,7 +105,8 @@ export function buildApp(config, db) {
 export function requireCsrf(req, reply) {
   const token = req.body?.csrf;
   if (!token || token !== req.session.csrf) {
-    reply.code(403).send('Ungültiges CSRF-Token.');
+    // Meist eine abgelaufene/neue Session (z.B. Seite lange offen): neu laden hilft.
+    reply.code(403).send(translator(req.lang)('sys.csrf'));
     return false;
   }
   return true;
@@ -115,7 +118,7 @@ export function rateLimiter(app, opts) {
     if (!check) check = app.createRateLimit(opts);
     const limit = await check(req);
     if (!limit.isAllowed && limit.isExceeded) {
-      reply.code(429).send('Zu viele Anfragen. Bitte einen Moment warten und erneut versuchen.');
+      reply.code(429).send(translator(req.lang)('sys.rateLimit'));
       return false;
     }
     return true;
@@ -126,6 +129,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const config = loadConfig(process.env);
   const db = createDb(config.dbPath);
   const app = buildApp(config, db);
+  startMaintenance(db, config);
   app.listen({ host: '0.0.0.0', port: config.port })
     .then(() => console.log(`Helfertool läuft auf Port ${config.port}`))
     .catch((err) => { console.error(err); process.exit(1); });

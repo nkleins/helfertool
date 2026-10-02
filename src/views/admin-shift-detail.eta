@@ -1,24 +1,21 @@
 <div class="admin">
-  <div class="admin-bar">
-    <h2><%= it.shift.title || 'Schicht' %> <small class="hint">(<%= it.shift.area_name %>)</small></h2>
-    <div class="admin-actions"><a href="/admin">← Dashboard</a></div>
-  </div>
-  <p><%= it.when %> · <%= it.signups.length %>/<%= it.shift.capacity %> belegt</p>
+  <%~ include('admin-back', { t: it.t, heading: (it.shift.title || it.t('shift.untitled')) + ' (' + it.shift.area_name + ')' }) %>
+  <p><%= it.when %> · <%= it.t('detail.taken', { taken: it.signups.length, capacity: it.shift.capacity }) %></p>
   <% if (it.can('shifts')) { %>
   <div class="admin-actions">
-    <a href="/admin/shifts/<%= it.shift.id %>/edit">Schicht bearbeiten</a>
+    <a href="/admin/shifts/<%= it.shift.id %>/edit"><%= it.t('detail.edit') %></a>
     <form method="post" action="/admin/shifts/<%= it.shift.id %>/delete" class="inline"
-          onsubmit="return confirm('Schicht wirklich löschen? Alle Eintragungen gehen verloren.')">
+          data-confirm="<%= it.t('detail.deleteConfirm') %>" onsubmit="return confirm(this.dataset.confirm)">
       <input type="hidden" name="csrf" value="<%= it.csrf %>">
-      <button type="submit" class="danger">Schicht löschen</button>
+      <button type="submit" class="danger"><%= it.t('detail.delete') %></button>
     </form>
   </div>
   <% } %>
 
   <%~ include('errors', it) %>
 
-  <h3>Eingetragene Helfer:innen</h3>
-  <% if (!it.signups.length) { %><p class="hint">Noch niemand eingetragen.</p><% } %>
+  <h3><%= it.t('detail.people') %></h3>
+  <% if (!it.signups.length) { %><p class="hint"><%= it.t('detail.nobody') %></p><% } %>
   <% if (!it.can('signups')) { %>
   <ul class="signups-list">
   <% it.signups.forEach(function(g){ %>
@@ -31,27 +28,27 @@
     <li class="signup-row">
       <form method="post" action="/admin/signups/<%= g.id %>" class="signup-form">
         <input type="hidden" name="csrf" value="<%= it.csrf %>">
-        <input type="text" name="name" value="<%= g.name %>" required maxlength="500" aria-label="Name" placeholder="Name">
-        <input type="tel" name="phone" value="<%= g.phone || '' %>" maxlength="500" aria-label="Telefon" placeholder="Telefon">
-        <input type="text" name="note" value="<%= g.note || '' %>" maxlength="500" aria-label="Notiz" placeholder="Notiz">
-        <button type="submit">Speichern</button>
+        <input type="text" name="name" value="<%= g.name %>" required maxlength="500" aria-label="<%= it.t('detail.name') %>" placeholder="<%= it.t('detail.name') %>">
+        <input type="tel" name="phone" value="<%= g.phone || '' %>" maxlength="500" aria-label="<%= it.t('detail.phone') %>" placeholder="<%= it.t('detail.phone') %>">
+        <input type="text" name="note" value="<%= g.note || '' %>" maxlength="500" aria-label="<%= it.t('detail.note') %>" placeholder="<%= it.t('detail.note') %>">
+        <button type="submit"><%= it.t('common.save') %></button>
       </form>
       <form method="post" action="/admin/signups/<%= g.id %>/delete" class="inline"
-            onsubmit="return confirm('Eintrag entfernen?')">
+            data-confirm="<%= it.t('detail.removeConfirm') %>" onsubmit="return confirm(this.dataset.confirm)">
         <input type="hidden" name="csrf" value="<%= it.csrf %>">
-        <button type="submit" class="danger">entfernen</button>
+        <button type="submit" class="danger"><%= it.t('detail.remove') %></button>
       </form>
     </li>
   <% }) %>
   </ul>
 
-  <h3>Helfer:in manuell hinzufügen</h3>
+  <h3><%= it.t('detail.addTitle') %></h3>
   <form method="post" action="/admin/shifts/<%= it.shift.id %>/signups" class="signup-form">
     <input type="hidden" name="csrf" value="<%= it.csrf %>">
-    <input type="text" name="name" placeholder="Name" required maxlength="500">
-    <input type="tel" name="phone" placeholder="Telefon (optional)" maxlength="500">
-    <input type="text" name="note" placeholder="Notiz (optional)" maxlength="500">
-    <button type="submit">Hinzufügen</button>
+    <input type="text" name="name" placeholder="<%= it.t('detail.name') %>" required maxlength="500">
+    <input type="tel" name="phone" placeholder="<%= it.t('detail.phoneOptional') %>" maxlength="500">
+    <input type="text" name="note" placeholder="<%= it.t('detail.noteOptional') %>" maxlength="500">
+    <button type="submit"><%= it.t('detail.add') %></button>
   </form>
   <% } %>
 </div>

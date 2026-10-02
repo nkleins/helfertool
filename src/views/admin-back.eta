@@ -1,0 +1,4 @@
+<div class="admin-bar">
+  <h2><%= it.heading %></h2>
+  <div class="admin-actions"><a href="<%= it.href || '/admin' %>"><%= it.label || it.t('nav.back') %></a></div>
+</div>

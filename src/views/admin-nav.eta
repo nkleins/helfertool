@@ -1,12 +1,12 @@
 <div class="admin-actions">
-  <% if (it.can('shifts')) { %><a href="/admin/shifts/new">+ Schichten erzeugen</a> ·<% } %>
-  <% if (it.can('areas')) { %><a href="/admin/areas">Bereiche</a> ·<% } %>
-  <a href="/admin/qr">QR</a> ·
-  <% if (it.can('export')) { %><a href="/admin/export.csv">CSV</a> ·<% } %>
-  <% if (it.can('settings_view')) { %><a href="/admin/settings">Einstellungen</a> ·<% } %>
-  <% if (it.me.is_owner) { %><a href="/admin/users">Benutzer</a> ·<% } %>
-  <a href="/admin/password">Passwort</a>
+  <% if (it.can('shifts')) { %><a href="/admin/shifts/new"><%= it.t('nav.generate') %></a> ·<% } %>
+  <% if (it.can('areas')) { %><a href="/admin/areas"><%= it.t('nav.areas') %></a> ·<% } %>
+  <a href="/admin/qr"><%= it.t('nav.qr') %></a> ·
+  <% if (it.can('export')) { %><a href="/admin/export.csv"><%= it.t('nav.csv') %></a> ·<% } %>
+  <% if (it.can('settings_view')) { %><a href="/admin/settings"><%= it.t('nav.settings') %></a> ·<% } %>
+  <% if (it.me.is_owner) { %><a href="/admin/users"><%= it.t('nav.users') %></a> ·<% } %>
+  <a href="/admin/password"><%= it.t('nav.password') %></a>
   <form method="post" action="/admin/logout" class="inline">
-    <input type="hidden" name="csrf" value="<%= it.csrf %>"><button type="submit">Logout (<%= it.me.username %>)</button>
+    <input type="hidden" name="csrf" value="<%= it.csrf %>"><button type="submit"><%= it.t('nav.logout', { user: it.me.username }) %></button>
   </form>
 </div>

@@ -54,10 +54,14 @@ test('Fehlermeldungen beim Eintragen sind übersetzt', async () => {
   await app.close();
 });
 
-test('Admin-Bereich bleibt Deutsch ohne Umschalter', async () => {
+test('Admin-Bereich ist auf Englisch umschaltbar', async () => {
   const { app } = await makeApp();
-  const res = await app.inject({ method: 'GET', url: '/admin/login', headers: { cookie: 'lang=en' } });
-  assert.doesNotMatch(res.body, /lang-switch/);
+  const de = await app.inject({ method: 'GET', url: '/admin/login' });
+  assert.match(de.body, /Benutzername/);
+  assert.match(de.body, /class="lang-switch" href="\/lang\/en\?back=%2Fadmin%2Flogin"/);
+  const en = await app.inject({ method: 'GET', url: '/admin/login', headers: { cookie: 'lang=en' } });
+  assert.match(en.body, /Username/);
+  assert.match(en.body, /Admin login/);
   await app.close();
 });
 
@@ -90,4 +94,20 @@ test('Englische Texte für Bereiche/Schichten mit Rückfall auf Deutsch', async 
   assert.match(de.body, />Spülen</);
   assert.doesNotMatch(de.body, /Back left/);
   await app.close();
+});
+
+test('Alle im Code verwendeten Übersetzungsschlüssel existieren', async () => {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const files = [];
+  const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).forEach((e) => {
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) { if (e.name !== 'locales') walk(p); } else files.push(p);
+  });
+  walk('src');
+  const used = new Set();
+  const re = /\bt\('([a-zA-Z]+\.[a-zA-Z_.]+)'|'((?:v|err|gen|detail|settings|pw|users|reset|login|forbidden|dash|shift|qr|common|sys)\.[a-zA-Z_]+)'/g;
+  for (const f of files) for (const m of fs.readFileSync(f, 'utf8').matchAll(re)) used.add(m[1] || m[2]);
+  const missing = [...used].filter((k) => !(k in messages.de));
+  assert.deepEqual(missing, []);
 });

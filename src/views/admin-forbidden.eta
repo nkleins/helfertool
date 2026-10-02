@@ -1,5 +1,4 @@
 <div class="admin">
-  <h2>Keine Berechtigung</h2>
-  <p>Dein Account darf das leider nicht. Wende dich an den Hauptadmin, wenn du das brauchst.</p>
-  <p><a href="/admin">← Dashboard</a></p>
+  <%~ include('admin-back', { t: it.t, heading: it.t('forbidden.title') }) %>
+  <p><%= it.t('forbidden.text') %></p>
 </div>

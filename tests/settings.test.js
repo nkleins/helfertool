@@ -184,3 +184,55 @@ test('Quellcode-Link zeigt aufs eigene Repo, wenn SOURCE_URL gesetzt ist', async
   assert.match((await withUrl.app.inject({ method: 'GET', url: '/' })).body, /href="https:\/\/example.org\/code"[^>]*>Quellcode \(AGPL\)/);
   await withUrl.app.close();
 });
+
+test('Impressum/Datenschutz erscheinen in der Fußzeile, ungültige Links werden abgelehnt', async () => {
+  const { app, cookie, csrf } = await adminSession();
+  const bad = multipart({ csrf, event_name: 'X', accent_color: '#123456', imprint_url: 'javascript:alert(1)' });
+  const r1 = await app.inject({ method: 'POST', url: '/admin/settings', headers: { cookie, ...bad.headers }, payload: bad.payload });
+  assert.match(r1.body, /http:\/\/ oder https:\/\//);
+  const ok = multipart({ csrf, event_name: 'X', accent_color: '#123456', imprint_url: 'https://example.org/impressum', privacy_url: 'https://example.org/datenschutz', auto_delete: '1' });
+  await app.inject({ method: 'POST', url: '/admin/settings', headers: { cookie, ...ok.headers }, payload: ok.payload });
+  const page = await app.inject({ method: 'GET', url: '/' });
+  assert.match(page.body, /href="https:\/\/example.org\/impressum"[^>]*>Impressum/);
+  assert.match(page.body, /href="https:\/\/example.org\/datenschutz"[^>]*>Datenschutz/);
+  await app.close();
+});
+
+test('Alle Admin-Seiten funktionieren auf Englisch', async () => {
+  const { app, db, cookie, csrf } = await adminSession();
+  const { createArea } = await import('../src/repositories/areas.js');
+  const { createShift } = await import('../src/repositories/shifts.js');
+  const area_id = createArea(db, { name: 'Bar' });
+  const id = createShift(db, { area_id, title: null, starts_at: '2099-09-25T18:00', ends_at: '2099-09-25T19:00', capacity: 2, notes: null });
+  const en = { cookie: `${cookie}; lang=en` };
+  const expect = {
+    '/admin': /Dashboard.*Create shifts/s, '/admin/areas': /New area/, '/admin/shifts/new': /Shift length/,
+    [`/admin/shifts/${id}`]: /Signed-up volunteers/, [`/admin/shifts/${id}/edit`]: /Edit shift/,
+    '/admin/qr': /QR code/, '/admin/settings': /Legal &amp; privacy/, '/admin/password': /Change password/,
+    '/admin/users': /Create a new account/,
+  };
+  for (const [url, re] of Object.entries(expect)) {
+    const res = await app.inject({ method: 'GET', url, headers: en });
+    assert.equal(res.statusCode, 200, url);
+    assert.match(res.body, re, url);
+  }
+  const csv = await app.inject({ method: 'GET', url: '/admin/export.csv', headers: en });
+  assert.match(csv.body, /Area;Shift;Start;End;Name;Phone;Note/);
+  // Zurücksetzen akzeptiert die englische Phrase
+  const reset = await app.inject({ method: 'POST', url: '/admin/reset', headers: en, payload: { csrf, confirm: 'delete everything' } });
+  assert.equal(reset.statusCode, 302);
+  await app.close();
+});
+
+test('Dashboard kündigt das automatische Löschen an', async () => {
+  const { app, db, cookie } = await adminSession();
+  const { createArea } = await import('../src/repositories/areas.js');
+  const { createShift } = await import('../src/repositories/shifts.js');
+  const { createSignup } = await import('../src/repositories/signups.js');
+  const area_id = createArea(db, { name: 'Bar' });
+  const id = createShift(db, { area_id, title: null, starts_at: '2026-09-27T18:00', ends_at: '2026-09-27T20:00', capacity: 2, notes: null });
+  createSignup(db, { shift_id: id, name: 'Anna' });
+  const res = await app.inject({ method: 'GET', url: '/admin', headers: { cookie } });
+  assert.match(res.body, /am 11\.10\.2026 automatisch gelöscht/);
+  await app.close();
+});

@@ -1,52 +1,51 @@
 <div class="admin">
   <div class="admin-bar">
-    <h2>Benutzer</h2>
-    <div class="admin-actions"><a href="/admin">← Dashboard</a> · <a href="/admin/settings">Einstellungen</a></div>
+    <h2><%= it.t('users.title') %></h2>
+    <div class="admin-actions"><a href="/admin"><%= it.t('nav.back') %></a> · <a href="/admin/settings"><%= it.t('nav.settings') %></a></div>
   </div>
-  <% if (it.notice) { %><p class="saved"><%= it.notice %></p><% } %>
+  <% if (it.notice) { %><p class="saved"><%= it.t(it.notice) %></p><% } %>
   <%~ include('errors', it) %>
 
   <% it.users.forEach(function(u){ %>
     <section class="user-card">
       <% if (u.is_owner) { %>
-        <h3><%= u.username %> <span class="orga-badge">Hauptadmin</span></h3>
-        <p class="hint">Darf alles, inklusive Benutzer verwalten und alles zurücksetzen.
-          <a href="/admin/password">Eigenes Passwort ändern</a></p>
+        <h3><%= u.username %> <span class="orga-badge"><%= it.t('users.owner') %></span></h3>
+        <p class="hint"><%= it.t('users.ownerText') %> <a href="/admin/password"><%= it.t('users.ownPassword') %></a></p>
       <% } else { %>
         <details>
           <summary><strong><%= u.username %></strong>
-            <span class="hint">· <%= u.perms.length ? u.perms.length + ' Rechte' : 'nur ansehen' %>
-              · <%= u.areaIds == null ? 'alle Bereiche' : u.areaIds.length + ' Bereich(e)' %>
-              <% if (u.must_change_password) { %>· muss Passwort noch ändern<% } %></span>
+            <span class="hint">· <%= u.perms.length ? it.t('users.permCount', { n: u.perms.length }) : it.t('users.viewOnly') %>
+              · <%= u.areaIds == null ? it.t('users.allAreas') : it.t('users.areaCount', { n: u.areaIds.length }) %>
+              <% if (u.must_change_password) { %>· <%= it.t('users.mustChange') %><% } %></span>
           </summary>
           <form method="post" action="/admin/users/<%= u.id %>" class="shift-form">
             <input type="hidden" name="csrf" value="<%= it.csrf %>">
-            <label>Benutzername <input name="username" value="<%= u.username %>" required maxlength="50"></label>
-            <%~ include('admin-user-access', { permissions: it.permissions, areas: it.areas, perms: u.perms, areaScope: u.areaIds == null ? 'all' : 'some', areaIds: u.areaIds }) %>
-            <button type="submit">Speichern</button>
+            <label><%= it.t('users.username') %> <input name="username" value="<%= u.username %>" required maxlength="50"></label>
+            <%~ include('admin-user-access', { t: it.t, permissions: it.permissions, areas: it.areas, perms: u.perms, areaScope: u.areaIds == null ? 'all' : 'some', areaIds: u.areaIds }) %>
+            <button type="submit"><%= it.t('common.save') %></button>
           </form>
           <form method="post" action="/admin/users/<%= u.id %>/password" class="signup-form">
             <input type="hidden" name="csrf" value="<%= it.csrf %>">
-            <input type="text" name="password" placeholder="Neues Passwort (mind. 8 Zeichen)" minlength="8" required autocomplete="off">
-            <button type="submit">Passwort neu setzen</button>
+            <input type="text" name="password" placeholder="<%= it.t('users.newPassword') %>" minlength="8" required autocomplete="off">
+            <button type="submit"><%= it.t('users.resetPassword') %></button>
           </form>
           <form method="post" action="/admin/users/<%= u.id %>/delete" class="inline"
-                onsubmit="return confirm('Diesen Account wirklich löschen?')">
+                data-confirm="<%= it.t('users.deleteConfirm') %>" onsubmit="return confirm(this.dataset.confirm)">
             <input type="hidden" name="csrf" value="<%= it.csrf %>">
-            <button type="submit" class="danger">Account löschen</button>
+            <button type="submit" class="danger"><%= it.t('users.delete') %></button>
           </form>
         </details>
       <% } %>
     </section>
   <% }) %>
 
-  <h3>Neuen Account anlegen</h3>
+  <h3><%= it.t('users.createTitle') %></h3>
   <form method="post" action="/admin/users" class="shift-form">
     <input type="hidden" name="csrf" value="<%= it.csrf %>">
-    <label>Benutzername <input name="username" value="<%= it.values.username || '' %>" required maxlength="50" autocomplete="off"></label>
-    <label>Start-Passwort (mind. 8 Zeichen, muss beim ersten Login geändert werden)
+    <label><%= it.t('users.username') %> <input name="username" value="<%= it.values.username || '' %>" required maxlength="50" autocomplete="off"></label>
+    <label><%= it.t('users.startPassword') %>
       <input type="text" name="password" required minlength="8" autocomplete="off"></label>
-    <%~ include('admin-user-access', { permissions: it.permissions, areas: it.areas, perms: it.values.perms, areaScope: it.values.area_scope, areaIds: it.values.areas }) %>
-    <button type="submit">Account anlegen</button>
+    <%~ include('admin-user-access', { t: it.t, permissions: it.permissions, areas: it.areas, perms: it.values.perms, areaScope: it.values.area_scope, areaIds: it.values.areas }) %>
+    <button type="submit"><%= it.t('users.create') %></button>
   </form>
 </div>

@@ -40,7 +40,7 @@ h2, h3 { letter-spacing: .3px; }
 }
 .site-header .logo { max-width: 150px; height: auto; }
 .site-header h1 {
-  font-size: clamp(.95rem, 4.2vw, 1.3rem); letter-spacing: .5px; text-transform: uppercase;
+  font-size: clamp(.85rem, 3.8vw, 1.3rem); letter-spacing: .3px; text-transform: uppercase;
   margin: .4rem 0 .2rem; overflow-wrap: break-word; hyphens: auto;
 }
 .motto {
@@ -217,3 +217,4 @@ th, td { border: 1px solid var(--line); padding: .5rem; text-align: left; font-s
   .area-form { grid-auto-flow: row; grid-template-columns: 1fr; }
 }
 .donate { margin-top: 2rem; font-size: .85rem; text-align: center; }
+.site-footer .legal { margin-top: .2rem; }

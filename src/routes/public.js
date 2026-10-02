@@ -85,14 +85,13 @@ export function registerPublicRoutes(app) {
     if (!requireCsrf(req, reply)) return;
     const result = validateSignupInput(req.body);
     const shiftId = Number.parseInt(req.body.shift_id, 10);
-    const t = translator(req.lang);
     if (!result.ok) {
-      return reply.code(200).type('text/html').send(render(app, req, { orga, errors: result.errors.map(t.message), values: req.body }));
+      return reply.code(200).type('text/html').send(render(app, req, { orga, errors: result.errors, values: req.body }));
     }
     const shift = getShift(db, shiftId);
     if (shift && shift.requires_phone && !result.value.phone) {
       return reply.code(200).type('text/html').send(render(app, req, {
-        orga, errors: [t('err.phoneRequired')], values: req.body,
+        orga, errors: ['err.phoneRequired'], values: req.body,
       }));
     }
     let token = req.cookies?.htoken;
@@ -104,7 +103,7 @@ export function registerPublicRoutes(app) {
     }
     const created = createSignup(db, { shift_id: shiftId, ...result.value, device_token: token });
     if (!created.ok) {
-      const msg = t(created.reason === 'full' ? 'err.full' : 'err.notFound');
+      const msg = created.reason === 'full' ? 'err.full' : 'err.notFound';
       return reply.code(200).type('text/html').send(render(app, req, { orga, errors: [msg], values: req.body }));
     }
     return reply.redirect(orga ? '/orga' : '/danke');

@@ -13,8 +13,11 @@ import {
 import { signupsCsv } from '../csv.js';
 import { formatTime, formatDay } from '../display.js';
 import { DONATE_URL } from '../project.js';
+import { translator } from '../i18n.js';
+import { autoDeleteDue } from '../maintenance.js';
 
-const RESET_PHRASE = 'ALLES LÖSCHEN';
+// Bestätigung fürs Zurücksetzen: die Phrase der jeweiligen Sprache (beide werden akzeptiert).
+const RESET_PHRASES = ['ALLES LÖSCHEN', 'DELETE EVERYTHING'];
 // Bei unbekanntem Benutzernamen trotzdem einen Hash prüfen, damit die Antwortzeit
 // nicht verrät, ob es den Account gibt.
 const DUMMY_HASH = hashPassword('dummy-password-for-timing');
@@ -37,15 +40,21 @@ export function registerAdminRoutes(app) {
 
   const loginLimit = rateLimiter(app, { max: 10, timeWindow: '1 minute', keyGenerator: () => 'login' });
 
+  // Rendert eine Admin-Seite. Titel sind Übersetzungsschlüssel (oder freier Text).
   function page(req, reply, view, data, code = 200) {
     const me = req.user;
+    const t = translator(req.lang);
     return reply.code(code).type('text/html').send(app.render(view, {
-      csrf: req.session.csrf, me, can: (perm) => can(me, perm), ...data,
+      csrf: req.session.csrf, me, can: (perm) => can(me, perm),
+      lang: req.lang, langSwitch: true, path: req.method === 'GET' ? req.url : '/admin',
+      ...data, title: t(data.title),
     }));
   }
 
+  const notFound = (req, reply, key) => reply.code(404).send(translator(req.lang)(key));
+
   function forbidden(req, reply) {
-    page(req, reply, 'admin-forbidden', { title: 'Keine Berechtigung' }, 403);
+    page(req, reply, 'admin-forbidden', { title: 'forbidden.title' }, 403);
     return false;
   }
 
@@ -62,16 +71,22 @@ export function registerAdminRoutes(app) {
   // Schicht laden und prüfen, ob der Account ihren Bereich sehen darf.
   function scopedShift(req, reply, id) {
     const shift = getShift(db, Number(id));
-    if (!shift) { reply.code(404).send('Schicht nicht gefunden.'); return null; }
+    if (!shift) { notFound(req, reply, 'err.notFound'); return null; }
     if (!canSeeArea(req.user, shift.area_id)) { forbidden(req, reply); return null; }
     return shift;
   }
 
   const myAreas = (req) => listAreas(db).filter((a) => canSeeArea(req.user, a.id));
 
+  // Datum, an dem die Anmeldungen automatisch gelöscht werden (für den Hinweis im Dashboard).
+  function autoDeleteLabel() {
+    const due = autoDeleteDue(db);
+    return due ? formatDay(due) : null;
+  }
+
   app.get('/admin/login', (req, reply) => {
     if (req.isAdmin) return reply.redirect('/admin');
-    page(req, reply, 'admin-login', { title: 'Login', error: null });
+    page(req, reply, 'admin-login', { title: 'login.title', error: null });
   });
 
   app.post('/admin/login', async (req, reply) => {
@@ -81,7 +96,7 @@ export function registerAdminRoutes(app) {
     const user = getUserByName(db, String(username ?? '').trim());
     const ok = verifyPassword(password ?? '', user ? user.password_hash : DUMMY_HASH) && Boolean(user);
     if (!ok) {
-      return page(req, reply, 'admin-login', { title: 'Login', error: 'Benutzername oder Passwort ist falsch.' });
+      return page(req, reply, 'admin-login', { title: 'login.title', error: 'login.error' });
     }
     deleteSession(db, req.session.id);
     const created = createSession(db, { isAdmin: true, userId: user.id });
@@ -113,7 +128,7 @@ export function registerAdminRoutes(app) {
       index.get(key).items.push({ ...s, time: `${formatTime(s.starts_at)}–${formatTime(s.ends_at)}`, people: listSignupsByShift(db, s.id) });
     }
     page(req, reply, 'admin-dashboard', {
-      title: 'Dashboard', donateUrl: DONATE_URL, stats: areaStats(db).filter((a) => canSeeArea(req.user, a.area_id)), groups,
+      title: 'dash.title', donateUrl: DONATE_URL, autoDeleteOn: autoDeleteLabel(), stats: areaStats(db).filter((a) => canSeeArea(req.user, a.area_id)), groups,
     });
   });
 
@@ -127,7 +142,7 @@ export function registerAdminRoutes(app) {
   });
 
   const generatePage = (req, reply, values, errors = []) => page(req, reply, 'admin-generate', {
-    title: 'Schichten erzeugen', areas: myAreas(req), values, errors, slotOptions: ALLOWED_SLOTS,
+    title: 'gen.title', areas: myAreas(req), values, errors, slotOptions: ALLOWED_SLOTS,
   });
 
   app.get('/admin/shifts/new', (req, reply) => {
@@ -142,7 +157,7 @@ export function registerAdminRoutes(app) {
     if (!v.ok) return generatePage(req, reply, req.body, v.errors);
     if (!canSeeArea(req.user, v.value.area_id)) return forbidden(req, reply);
     const slots = planSlots(v.value);
-    if (slots.length === 0) return generatePage(req, reply, req.body, ['Das Zeitfenster ist kürzer als eine Schicht.']);
+    if (slots.length === 0) return generatePage(req, reply, req.body, ['gen.tooShort']);
     generateShifts(db, v.value);
     return reply.redirect('/admin');
   });
@@ -152,7 +167,7 @@ export function registerAdminRoutes(app) {
     const shift = scopedShift(req, reply, req.params.id);
     if (!shift) return;
     page(req, reply, 'admin-shift-form', {
-      title: 'Schicht bearbeiten', action: `/admin/shifts/${shift.id}`, shift, areas: myAreas(req), errors: [],
+      title: 'shift.editTitle', action: `/admin/shifts/${shift.id}`, shift, areas: myAreas(req), errors: [],
     });
   });
 
@@ -164,7 +179,7 @@ export function registerAdminRoutes(app) {
     const v = validateShiftInput(req.body);
     if (!v.ok) {
       return page(req, reply, 'admin-shift-form', {
-        title: 'Schicht bearbeiten', action: `/admin/shifts/${shift.id}`, shift: { ...req.body, id: shift.id },
+        title: 'shift.editTitle', action: `/admin/shifts/${shift.id}`, shift: { ...req.body, id: shift.id },
         areas: myAreas(req), errors: v.errors,
       });
     }
@@ -187,7 +202,7 @@ export function registerAdminRoutes(app) {
     const sameDay = shift.starts_at.slice(0, 10) === shift.ends_at.slice(0, 10);
     const when = `${formatDay(shift.starts_at)}, ${formatTime(shift.starts_at)}–${sameDay ? '' : `${formatDay(shift.ends_at)}, `}${formatTime(shift.ends_at)}`;
     return page(req, reply, 'admin-shift-detail', {
-      title: shift.title || 'Schicht', when, shift: { ...shift, area_name: area ? area.name : '' },
+      title: shift.title || 'shift.untitled', when, shift: { ...shift, area_name: area ? area.name : '' },
       signups: listSignupsByShift(db, shift.id), errors,
     });
   }
@@ -207,7 +222,7 @@ export function registerAdminRoutes(app) {
     const v = validateSignupInput(req.body);
     if (!v.ok) return shiftDetail(req, reply, shift, v.errors);
     const r = createSignup(db, { shift_id: shift.id, ...v.value });
-    if (!r.ok && r.reason === 'full') return shiftDetail(req, reply, shift, ['Schicht ist voll.']);
+    if (!r.ok && r.reason === 'full') return shiftDetail(req, reply, shift, ['detail.full']);
     return reply.redirect(`/admin/shifts/${shift.id}`);
   });
 
@@ -240,7 +255,7 @@ export function registerAdminRoutes(app) {
 
   app.get('/admin/export.csv', (req, reply) => {
     if (!requirePerm(req, reply, 'export')) return;
-    const csv = signupsCsv(listAllSignups(db).filter((r) => canSeeArea(req.user, r.area_id)));
+    const csv = signupsCsv(listAllSignups(db).filter((r) => canSeeArea(req.user, r.area_id)), translator(req.lang).list('csv.header'));
     reply
       .header('Content-Type', 'text/csv; charset=utf-8')
       .header('Content-Disposition', 'attachment; filename="helfer-export.csv"')
@@ -251,7 +266,7 @@ export function registerAdminRoutes(app) {
     if (!requireAdmin(req, reply)) return;
     const url = `${app.config.baseUrl}/`;
     const dataUrl = await QRCode.toDataURL(url, { width: 480, margin: 2 });
-    page(req, reply, 'admin-qr', { title: 'QR-Code', url, dataUrl });
+    page(req, reply, 'admin-qr', { title: 'qr.title', url, dataUrl });
   });
 
   app.get('/admin/qr.svg', async (req, reply) => {
@@ -261,7 +276,7 @@ export function registerAdminRoutes(app) {
   });
 
   const areasPage = (req, reply, errors = []) => page(req, reply, 'admin-areas', {
-    title: 'Bereiche', areas: myAreas(req), errors,
+    title: 'areas.title', areas: myAreas(req), errors,
   });
 
   app.get('/admin/areas', (req, reply) => {
@@ -282,7 +297,7 @@ export function registerAdminRoutes(app) {
     if (!requirePerm(req, reply, 'areas')) return;
     if (!requireCsrf(req, reply)) return;
     const id = Number(req.params.id);
-    if (!getArea(db, id)) return reply.code(404).send('Bereich nicht gefunden.');
+    if (!getArea(db, id)) return notFound(req, reply, 'err.areaNotFound');
     if (!canSeeArea(req.user, id)) return forbidden(req, reply);
     const v = validateAreaInput(req.body);
     if (!v.ok) return areasPage(req, reply, v.errors);
@@ -301,8 +316,8 @@ export function registerAdminRoutes(app) {
 
   function renderSettings(req, reply, { values, errors = [], saved = false, resetDone = false, resetErrors = [] }) {
     return page(req, reply, 'admin-settings', {
-      title: 'Einstellungen', values, errors, saved, resetDone, resetErrors,
-      resetPhrase: RESET_PHRASE, hasCustomLogo: Boolean(getLogoVersion(db)),
+      title: 'settings.title', values, errors, saved, resetDone, resetErrors,
+      resetPhrase: translator(req.lang)('reset.phrase'), hasCustomLogo: Boolean(getLogoVersion(db)),
     });
   }
 
@@ -316,10 +331,8 @@ export function registerAdminRoutes(app) {
   app.post('/admin/reset', (req, reply) => {
     if (!requireOwner(req, reply)) return;
     if (!requireCsrf(req, reply)) return;
-    if (String(req.body.confirm ?? '').trim().toUpperCase() !== RESET_PHRASE) {
-      return renderSettings(req, reply, {
-        values: getSettings(db), resetErrors: [`Zum Bestätigen bitte genau „${RESET_PHRASE}" eintippen.`],
-      });
+    if (!RESET_PHRASES.includes(String(req.body.confirm ?? '').trim().toUpperCase())) {
+      return renderSettings(req, reply, { values: getSettings(db), resetErrors: ['reset.wrongPhrase'] });
     }
     resetAll(db, { includeAreas: Boolean(req.body.include_areas) });
     return reply.redirect('/admin/settings?reset=1');
@@ -341,7 +354,7 @@ export function registerAdminRoutes(app) {
         }
       } catch (err) {
         if (err.code === 'FST_REQ_FILE_TOO_LARGE') {
-          return renderSettings(req, reply, { values: getSettings(db), errors: ['Das Logo ist zu groß (max. 2 MB).'] });
+          return renderSettings(req, reply, { values: getSettings(db), errors: ['settings.logoTooBig'] });
         }
         throw err;
       }
@@ -356,7 +369,7 @@ export function registerAdminRoutes(app) {
     let mime = null;
     if (file) {
       mime = detectImageMime(file);
-      if (!mime) errors.push('Logo muss ein PNG-, JPG-, GIF- oder WebP-Bild sein.');
+      if (!mime) errors.push('settings.logoType');
     }
     if (errors.length) {
       return renderSettings(req, reply, { values: { ...getSettings(db), ...body }, errors });
@@ -370,7 +383,7 @@ export function registerAdminRoutes(app) {
   // --- Eigenes Passwort ---------------------------------------------------
 
   const passwordPage = (req, reply, errors = [], saved = false) => page(req, reply, 'admin-password', {
-    title: 'Passwort ändern', errors, saved,
+    title: 'pw.title', errors, saved,
   });
 
   app.get('/admin/password', (req, reply) => {
@@ -382,10 +395,10 @@ export function registerAdminRoutes(app) {
     if (!requireAdmin(req, reply)) return;
     if (!requireCsrf(req, reply)) return;
     const errors = [];
-    if (!verifyPassword(req.body.current ?? '', req.user.password_hash)) errors.push('Aktuelles Passwort ist falsch.');
+    if (!verifyPassword(req.body.current ?? '', req.user.password_hash)) errors.push('pw.wrongCurrent');
     const v = validateNewPassword(req.body.password, req.body.password2);
     if (!v.ok) errors.push(...v.errors);
-    else if (req.body.password === req.body.current) errors.push('Das neue Passwort muss sich vom alten unterscheiden.');
+    else if (req.body.password === req.body.current) errors.push('pw.sameAsOld');
     if (errors.length) return passwordPage(req, reply, errors);
     setPassword(db, req.user.id, v.value);
     deleteSessionsOfUser(db, req.user.id, req.session.id); // andere Geräte abmelden
@@ -395,13 +408,13 @@ export function registerAdminRoutes(app) {
   // --- Benutzerverwaltung (nur Hauptadmin) -------------------------------
 
   const usersPage = (req, reply, { errors = [], values = {}, notice = null } = {}) => page(req, reply, 'admin-users', {
-    title: 'Benutzer', users: listUsers(db), areas: listAreas(db), permissions: PERMISSIONS,
+    title: 'users.title', users: listUsers(db), areas: listAreas(db), permissions: PERMISSIONS,
     errors, values, notice,
   });
 
   app.get('/admin/users', (req, reply) => {
     if (!requireOwner(req, reply)) return;
-    const notices = { created: 'Account angelegt.', saved: 'Gespeichert.', deleted: 'Account gelöscht.', password: 'Passwort gesetzt – muss beim nächsten Login geändert werden.' };
+    const notices = { created: 'users.noticeCreated', saved: 'common.saved', deleted: 'users.noticeDeleted', password: 'users.noticePassword' };
     usersPage(req, reply, { notice: notices[req.query.ok] ?? null });
   });
 
@@ -410,7 +423,7 @@ export function registerAdminRoutes(app) {
     if (!requireCsrf(req, reply)) return;
     const v = validateUserInput(req.body, { requirePassword: true });
     const errors = v.ok ? [] : [...v.errors];
-    if (v.ok && getUserByName(db, v.value.username)) errors.push('Diesen Benutzernamen gibt es schon.');
+    if (v.ok && getUserByName(db, v.value.username)) errors.push('users.exists');
     if (errors.length) return usersPage(req, reply, { errors, values: req.body });
     createUser(db, { ...v.value, mustChange: true });
     return reply.redirect('/admin/users?ok=created');
@@ -420,11 +433,11 @@ export function registerAdminRoutes(app) {
     if (!requireOwner(req, reply)) return;
     if (!requireCsrf(req, reply)) return;
     const user = getUser(db, Number(req.params.id));
-    if (!user || user.is_owner) return reply.code(404).send('Account nicht gefunden.');
+    if (!user || user.is_owner) return notFound(req, reply, 'err.userNotFound');
     const v = validateUserInput(req.body, { requirePassword: false });
     const errors = v.ok ? [] : [...v.errors];
     const clash = v.ok && getUserByName(db, v.value.username);
-    if (clash && clash.id !== user.id) errors.push('Diesen Benutzernamen gibt es schon.');
+    if (clash && clash.id !== user.id) errors.push('users.exists');
     if (errors.length) return usersPage(req, reply, { errors });
     updateUserAccess(db, user.id, v.value);
     return reply.redirect('/admin/users?ok=saved');
@@ -434,7 +447,7 @@ export function registerAdminRoutes(app) {
     if (!requireOwner(req, reply)) return;
     if (!requireCsrf(req, reply)) return;
     const user = getUser(db, Number(req.params.id));
-    if (!user || user.is_owner) return reply.code(404).send('Account nicht gefunden.');
+    if (!user || user.is_owner) return notFound(req, reply, 'err.userNotFound');
     const v = validateNewPassword(req.body.password, req.body.password);
     if (!v.ok) return usersPage(req, reply, { errors: v.errors });
     setPassword(db, user.id, v.value, { mustChange: true });

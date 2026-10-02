@@ -1,4 +1,4 @@
-<% if (!it.errorShiftId) { %><%~ include('errors', { errors: it.errors }) %><% } %>
+<% if (!it.errorShiftId) { %><%~ include('errors', { t: it.t, errors: it.errors }) %><% } %>
 
 <% if (it.orga) { %>
   <p class="intro"><%= it.t('intro.orga') %>
@@ -51,7 +51,7 @@
             <ul class="names"><% s.people.forEach(function(p){ %><li><%= p.display %><% if (p.phone) { %> <span class="phone">· <%= p.phone %></span><% } %></li><% }) %></ul>
           <% } %>
           <% if (s.notes) { %><p class="notes"><%= s.notes %></p><% } %>
-          <% if (hasError) { %><%~ include('errors', { errors: it.errors }) %><% } %>
+          <% if (hasError) { %><%~ include('errors', { t: it.t, errors: it.errors }) %><% } %>
           <% if (s.free > 0) { %>
             <form method="post" action="<%= it.action %>" class="signup-form">
               <input type="hidden" name="csrf" value="<%= it.csrf %>">

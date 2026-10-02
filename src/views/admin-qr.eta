@@ -1,12 +1,9 @@
 <div class="admin">
-  <div class="admin-bar">
-    <h2>QR-Code</h2>
-    <div class="admin-actions"><a href="/admin">← Dashboard</a></div>
-  </div>
+  <%~ include('admin-back', { t: it.t, heading: it.t('qr.title') }) %>
   <div class="qr-page">
-  <p>Führt zu: <code><%= it.url %></code></p>
-  <img src="<%= it.dataUrl %>" alt="QR-Code" class="qr-img">
-  <p><a href="/admin/qr.svg" download="helfer-qr.svg">QR als SVG herunterladen</a></p>
-  <p class="hint">Zum Ausdrucken/Aushängen – Handy-Kamera drauf, fertig.</p>
+    <p><%= it.t('qr.target') %> <code><%= it.url %></code></p>
+    <img src="<%= it.dataUrl %>" alt="QR-Code" class="qr-img">
+    <p><a href="/admin/qr.svg" download="helfer-qr.svg"><%= it.t('qr.download') %></a></p>
+    <p class="hint"><%= it.t('qr.hint') %></p>
   </div>
 </div>

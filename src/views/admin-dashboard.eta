@@ -1,8 +1,12 @@
 <div class="admin">
   <div class="admin-bar">
-    <h2>Dashboard</h2>
+    <h2><%= it.t('dash.title') %></h2>
     <%~ include('admin-nav', it) %>
   </div>
+
+  <% if (it.autoDeleteOn) { %>
+    <p class="hint"><%= it.t('dash.autoDelete', { date: it.autoDeleteOn }) %></p>
+  <% } %>
 
   <section class="progress">
     <% it.stats.forEach(function(a){ var pct = a.capacity ? Math.round(a.taken*100/a.capacity) : 0; %>
@@ -10,12 +14,12 @@
         <span class="dot" style="background:<%= a.color %>"></span>
         <strong><%= a.name %></strong>
         <span class="bar"><span class="bar-fill" style="width:<%= pct %>%;background:<%= a.color %>"></span></span>
-        <span class="pct"><%= pct %>% belegt (<%= a.taken %>/<%= a.capacity %>) · <%= a.gaps %> Lücken</span>
+        <span class="pct"><%= it.t('dash.progress', { pct: pct, taken: a.taken, capacity: a.capacity, gaps: a.gaps }) %></span>
       </div>
     <% }) %>
   </section>
 
-  <% if (!it.groups.length) { %><p>Noch keine Schichten.<% if (it.can('shifts')) { %> <a href="/admin/shifts/new">Jetzt erzeugen.</a><% } %></p><% } %>
+  <% if (!it.groups.length) { %><p><%= it.t('dash.noShifts') %><% if (it.can('shifts')) { %> <a href="/admin/shifts/new"><%= it.t('dash.createNow') %></a><% } %></p><% } %>
 
   <% it.groups.forEach(function(g){ %>
     <section class="day-group">
@@ -23,37 +27,38 @@
         <h3><span class="dot" style="background:<%= g.area_color %>"></span> <%= g.area_name %> · <%= g.dayLabel %></h3>
         <% if (it.can('shifts')) { %>
         <form method="post" action="/admin/shifts/bulk-delete" class="inline"
-              onsubmit="return confirm('Alle Schichten dieses Bereichs an diesem Tag löschen?')">
+              data-confirm="<%= it.t('dash.deleteDayConfirm') %>" onsubmit="return confirm(this.dataset.confirm)">
           <input type="hidden" name="csrf" value="<%= it.csrf %>">
           <input type="hidden" name="area_id" value="<%= g.area_id %>">
           <input type="hidden" name="day" value="<%= g.day %>">
-          <button type="submit" class="danger">Tag löschen</button>
+          <button type="submit" class="danger"><%= it.t('dash.deleteDay') %></button>
         </form>
         <% } %>
       </div>
+      <div class="table-scroll">
       <table>
-        <thead><tr><th>Zeit</th><th>Titel</th><th>Belegt</th><th>Eingetragen</th><th></th></tr></thead>
+        <thead><tr><th><%= it.t('dash.colTime') %></th><th><%= it.t('dash.colTitle') %></th><th><%= it.t('dash.colTaken') %></th><th><%= it.t('dash.colPeople') %></th><th></th></tr></thead>
         <tbody>
         <% g.items.forEach(function(s){ %>
           <tr class="<%= s.free <= 0 ? 'row-full' : (s.taken > 0 ? 'row-part' : 'row-empty') %>">
             <td><%= s.time %></td>
-            <td><%= s.title || '—' %><% if (s.is_orga) { %> <span class="orga-badge">Orga</span><% } %><% if (s.requires_phone) { %> <span class="req-badge">Tel-Pflicht</span><% } %></td>
+            <td><%= s.title || '—' %><% if (s.is_orga) { %> <span class="orga-badge">Orga</span><% } %><% if (s.requires_phone) { %> <span class="req-badge"><%= it.t('dash.phoneBadge') %></span><% } %></td>
             <td><%= s.taken %>/<%= s.capacity %></td>
             <td>
               <% if (s.people.length) { %>
                 <ul class="who"><% s.people.forEach(function(p){ %><li><%= p.name %><% if (p.phone) { %> <span class="phone">· <%= p.phone %></span><% } %></li><% }) %></ul>
               <% } else { %>–<% } %>
             </td>
-            <td><a href="/admin/shifts/<%= s.id %>">Details</a><% if (it.can('shifts')) { %> · <a href="/admin/shifts/<%= s.id %>/edit">Bearb.</a><% } %></td>
+            <td><a href="/admin/shifts/<%= s.id %>"><%= it.t('dash.details') %></a><% if (it.can('shifts')) { %> · <a href="/admin/shifts/<%= s.id %>/edit"><%= it.t('dash.edit') %></a><% } %></td>
           </tr>
         <% }) %>
         </tbody>
       </table>
+      </div>
     </section>
   <% }) %>
 
   <% if (it.donateUrl) { %>
-    <p class="hint donate">Das Helfertool ist kostenlos und ehrenamtlich entstanden. Wenn es euch hilft,
-      freut sich der Entwickler über einen <a href="<%= it.donateUrl %>" target="_blank" rel="noopener">Kaffee ☕</a>.</p>
+    <p class="hint donate"><%= it.t('dash.donate') %> <a href="<%= it.donateUrl %>" target="_blank" rel="noopener"><%= it.t('dash.donateLink') %></a></p>
   <% } %>
 </div>

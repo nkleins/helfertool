@@ -2,15 +2,9 @@ import { hashPassword } from '../auth.js';
 
 // Einzelrechte für Team-Accounts. Der Hauptadmin (is_owner) darf immer alles,
 // zusätzlich Benutzer verwalten und alles zurücksetzen.
-export const PERMISSIONS = [
-  { key: 'shifts', label: 'Schichten erzeugen, bearbeiten und löschen' },
-  { key: 'signups', label: 'Helfer:innen eintragen, bearbeiten und austragen' },
-  { key: 'areas', label: 'Bereiche anlegen, bearbeiten und löschen' },
-  { key: 'export', label: 'CSV-Export herunterladen (enthält Telefonnummern)' },
-  { key: 'settings_view', label: 'Einstellungen ansehen' },
-  { key: 'settings_edit', label: 'Einstellungen ändern (Name, Logo, Farbe …)' },
-];
-const PERM_KEYS = new Set(PERMISSIONS.map((p) => p.key));
+// Beschriftungen stehen in src/locales/*.js unter "perm.<key>".
+export const PERMISSIONS = ['shifts', 'signups', 'areas', 'export', 'settings_view', 'settings_edit'];
+const PERM_KEYS = new Set(PERMISSIONS);
 
 function hydrate(row) {
   if (!row) return undefined;

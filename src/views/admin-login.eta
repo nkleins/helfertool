@@ -1,10 +1,10 @@
 <div class="admin-login">
-  <h2>Admin-Login</h2>
-  <% if (it.error) { %><p class="errors"><%= it.error %></p><% } %>
+  <h2><%= it.t('login.title') %></h2>
+  <% if (it.error) { %><p class="errors"><%= it.t(it.error) %></p><% } %>
   <form method="post" action="/admin/login">
     <input type="hidden" name="csrf" value="<%= it.csrf %>">
-    <input type="text" name="username" placeholder="Benutzername" required autocomplete="username">
-    <input type="password" name="password" placeholder="Passwort" required autocomplete="current-password">
-    <button type="submit">Anmelden</button>
+    <input type="text" name="username" placeholder="<%= it.t('login.username') %>" required autocomplete="username">
+    <input type="password" name="password" placeholder="<%= it.t('login.password') %>" required autocomplete="current-password">
+    <button type="submit"><%= it.t('login.submit') %></button>
   </form>
 </div>
