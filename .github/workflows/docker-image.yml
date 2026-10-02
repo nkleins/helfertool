@@ -1,11 +1,11 @@
-# Baut bei jeder Änderung auf main (und bei Versions-Tags wie v1.2.0) das
+# Baut bei jeder Änderung auf main (und bei Versions-Tags wie 1.2.0 oder v1.2.0) das
 # Docker-Image und veröffentlicht es unter ghcr.io/<owner>/<repo>.
 name: Docker-Image
 
 on:
   push:
     branches: [main]
-    tags: ['v*']
+    tags: ['v*', '[0-9]*']
   pull_request:
   workflow_dispatch:
 
