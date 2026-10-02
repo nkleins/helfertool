@@ -1,0 +1,5 @@
+# Caddy besorgt und erneuert das HTTPS-Zertifikat für die Domain automatisch.
+{$DOMAIN} {
+	encode gzip
+	reverse_proxy app:8080
+}

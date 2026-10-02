@@ -1,0 +1,32 @@
+# Helfertool mit automatischem HTTPS (Caddy holt das Zertifikat selbst).
+# Voraussetzungen: Die Domain zeigt per DNS auf diesen Server, Ports 80 und 443
+# sind frei. Einstellungen stehen in der .env (Vorlage: .env.example).
+services:
+  app:
+    image: ghcr.io/nkleins/helfertool:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      BASE_URL: https://${DOMAIN:?DOMAIN in der .env setzen}
+      PORT: "8080"
+    volumes:
+      - ./data:/data
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on: [app]
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:
