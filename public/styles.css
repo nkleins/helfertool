@@ -216,3 +216,4 @@ th, td { border: 1px solid var(--line); padding: .5rem; text-align: left; font-s
   .progress-row .pct { grid-column: 1 / -1; }
   .area-form { grid-auto-flow: row; grid-template-columns: 1fr; }
 }
+.donate { margin-top: 2rem; font-size: .85rem; text-align: center; }

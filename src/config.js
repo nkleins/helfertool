@@ -1,3 +1,5 @@
+import { REPO_URL } from './project.js';
+
 export function loadConfig(env = process.env) {
   const required = ['SESSION_SECRET', 'BASE_URL'];
   const missing = required.filter((k) => !env[k]);
@@ -12,6 +14,7 @@ export function loadConfig(env = process.env) {
     dbPath: env.DB_PATH ?? '/data/app.db',
     secureCookie: baseUrl.startsWith('https'),
     timeZone: env.TIMEZONE ?? 'Europe/Berlin',
-    sourceUrl: env.SOURCE_URL || null,
+    // AGPL: Link zum Quellcode. Wer das Tool verändert betreibt, setzt hier sein eigenes Repo.
+    sourceUrl: env.SOURCE_URL || REPO_URL,
   };
 }

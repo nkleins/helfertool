@@ -12,6 +12,7 @@ import {
 } from '../repositories/users.js';
 import { signupsCsv } from '../csv.js';
 import { formatTime, formatDay } from '../display.js';
+import { DONATE_URL } from '../project.js';
 
 const RESET_PHRASE = 'ALLES LÖSCHEN';
 // Bei unbekanntem Benutzernamen trotzdem einen Hash prüfen, damit die Antwortzeit
@@ -112,7 +113,7 @@ export function registerAdminRoutes(app) {
       index.get(key).items.push({ ...s, time: `${formatTime(s.starts_at)}–${formatTime(s.ends_at)}`, people: listSignupsByShift(db, s.id) });
     }
     page(req, reply, 'admin-dashboard', {
-      title: 'Dashboard', stats: areaStats(db).filter((a) => canSeeArea(req.user, a.area_id)), groups,
+      title: 'Dashboard', donateUrl: DONATE_URL, stats: areaStats(db).filter((a) => canSeeArea(req.user, a.area_id)), groups,
     });
   });
 

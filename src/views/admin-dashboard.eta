@@ -51,4 +51,9 @@
       </table>
     </section>
   <% }) %>
+
+  <% if (it.donateUrl) { %>
+    <p class="hint donate">Das Helfertool ist kostenlos und ehrenamtlich entstanden. Wenn es euch hilft,
+      freut sich der Entwickler über einen <a href="<%= it.donateUrl %>" target="_blank" rel="noopener">Kaffee ☕</a>.</p>
+  <% } %>
 </div>

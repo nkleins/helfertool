@@ -4,6 +4,12 @@ Schicht-Anmeldung für Helfer:innen auf Conventions und Festivals – ursprüngl
 Kölnvention. Helfer:innen tragen sich ohne Registrierung per Handy ein (QR-Code zum Aushängen),
 das Orga-Team plant Bereiche und Schichten im Admin-Bereich.
 
+> **Wie dieses Tool entstanden ist:** Ich (Nikolai Kleinschmidt) habe Medieninformatik studiert –
+> dieses Tool habe ich aber **nicht selbst programmiert**. Der komplette Code wurde mit
+> [Claude](https://claude.ai) (KI-Assistent von Anthropic) geschrieben. Von mir kommen die Ideen,
+> die Anforderungen, das Testen im echten Einsatz und der Betrieb. Damit es keine
+> Missverständnisse gibt: Bitte nicht als handgeschriebenen Code von mir verstehen.
+
 ## Funktionen
 - **Schichtplan** pro Bereich mit Suche (Schicht, Bereich, Name), Tagesauswahl und automatisch
   ausgeblendeten vergangenen Schichten (1 Stunde nach Schichtende)
@@ -16,7 +22,33 @@ das Orga-Team plant Bereiche und Schichten im Admin-Bereich.
 - **Branding** ohne Code: Name, Logo, Motto, Fußzeile und Akzentfarbe im Admin-Bereich
 - **CSV-Export**, **QR-Code**, **Zurücksetzen** für die nächste Con
 
-## Installation (Docker)
+## Installation
+
+### Variante A: fertiges Docker-Image (ohne Git, empfohlen)
+Voraussetzung ist ein Server oder Rechner mit Docker. Einen Ordner anlegen, darin zwei Dateien:
+
+`docker-compose.yml`
+```yaml
+services:
+  app:
+    image: ghcr.io/nkleins/helfer-koelnvention:latest
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ./data:/data
+```
+
+`.env`
+```
+SESSION_SECRET=hier-einen-langen-zufaelligen-text-eintragen
+BASE_URL=https://helfer.example.org
+```
+
+Dann im Ordner `docker compose up -d` ausführen. **Updaten:** `docker compose pull && docker compose up -d`.
+
+### Variante B: aus dem Quellcode bauen
 ```bash
 git clone <REPO_URL> /opt/helfertool
 cd /opt/helfertool
@@ -32,7 +64,7 @@ Die App lauscht auf `127.0.0.1:<PORT>` (Standard 8080, einstellbar über `PORT` 
 Beispielkonfiguration für nginx liegt in `nginx/` (Domain und Port anpassen, dann
 `certbot --nginx -d <domain>`).
 
-### Updaten
+### Updaten (Variante B)
 ```bash
 cd /opt/helfertool && git pull && docker compose up -d --build
 ```
@@ -79,6 +111,10 @@ Fußzeile).
 
 Das Tool wird **ohne Gewähr und ohne Support** bereitgestellt. Wer es betreibt, ist selbst für
 den Betrieb und die gespeicherten Daten (Namen, Telefonnummern) verantwortlich.
+
+## Unterstützen
+Das Tool ist kostenlos und in meiner Freizeit entstanden. Wenn es eurer Con hilft, freue ich mich
+über einen Kaffee: _Link folgt_ ☕
 
 ## Entwicklung
 ```bash

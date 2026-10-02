@@ -179,10 +179,7 @@ test('Zurücksetzen erfordert Login und CSRF', async () => {
   await app.close();
 });
 
-test('Quellcode-Link erscheint nur mit SOURCE_URL', async () => {
-  const without = await makeApp();
-  assert.doesNotMatch((await without.app.inject({ method: 'GET', url: '/' })).body, /Quellcode/);
-  await without.app.close();
+test('Quellcode-Link zeigt aufs eigene Repo, wenn SOURCE_URL gesetzt ist', async () => {
   const withUrl = await makeApp({ sourceUrl: 'https://example.org/code' });
   assert.match((await withUrl.app.inject({ method: 'GET', url: '/' })).body, /href="https:\/\/example.org\/code"[^>]*>Quellcode \(AGPL\)/);
   await withUrl.app.close();
