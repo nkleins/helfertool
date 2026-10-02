@@ -31,7 +31,7 @@ Voraussetzung ist ein Server oder Rechner mit Docker. Einen Ordner anlegen, dari
 ```yaml
 services:
   app:
-    image: ghcr.io/nkleins/helfer-koelnvention:latest
+    image: ghcr.io/nkleins/helfertool:latest
     restart: unless-stopped
     env_file: .env
     ports:
@@ -50,7 +50,7 @@ Dann im Ordner `docker compose up -d` ausführen. **Updaten:** `docker compose p
 
 ### Variante B: aus dem Quellcode bauen
 ```bash
-git clone <REPO_URL> /opt/helfertool
+git clone https://github.com/nkleins/helfertool.git /opt/helfertool
 cd /opt/helfertool
 cp .env.example .env
 # In .env setzen: SESSION_SECRET (zufälliger String) und BASE_URL (öffentliche Adresse)
@@ -114,7 +114,7 @@ den Betrieb und die gespeicherten Daten (Namen, Telefonnummern) verantwortlich.
 
 ## Unterstützen
 Das Tool ist kostenlos und in meiner Freizeit entstanden. Wenn es eurer Con hilft, freue ich mich
-über einen Kaffee: _Link folgt_ ☕
+über einen Kaffee: **[paypal.me/nkleins1](https://paypal.me/nkleins1)** ☕
 
 ## Entwicklung
 ```bash
