@@ -127,6 +127,9 @@ export function initSchema(db) {
     db.exec('ALTER TABLE shifts ADD COLUMN requires_phone INTEGER NOT NULL DEFAULT 0;');
   }
 
+  if (!columnNames(db, 'sessions').includes('orga_key')) {
+    db.exec('ALTER TABLE sessions ADD COLUMN orga_key TEXT;');
+  }
   if (!columnNames(db, 'sessions').includes('user_id')) {
     db.exec('ALTER TABLE sessions ADD COLUMN user_id INTEGER;');
   }

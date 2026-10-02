@@ -366,6 +366,16 @@ export function registerAdminRoutes(app) {
 
     const v = validateSettingsInput(body);
     const errors = v.ok ? [] : [...v.errors];
+    // /orga-Passwort: Haken aus = Schutz aus; neues Passwort nur wenn eingegeben.
+    let orgaHash = getSettings(db).orga_password_hash;
+    if (!body.orga_protect) {
+      orgaHash = '';
+    } else if (body.orga_password) {
+      const pw = validateNewPassword(body.orga_password, body.orga_password);
+      if (pw.ok) orgaHash = hashPassword(pw.value); else errors.push(...pw.errors);
+    } else if (!orgaHash) {
+      errors.push('v.orgaPasswordRequired');
+    }
     let mime = null;
     if (file) {
       mime = detectImageMime(file);
@@ -374,7 +384,7 @@ export function registerAdminRoutes(app) {
     if (errors.length) {
       return renderSettings(req, reply, { values: { ...getSettings(db), ...body }, errors });
     }
-    saveSettings(db, v.value);
+    saveSettings(db, { ...v.value, orga_password_hash: orgaHash });
     if (body.remove_logo) clearLogo(db);
     else if (file) setLogo(db, { mime, data: file });
     return reply.redirect('/admin/settings?saved=1');

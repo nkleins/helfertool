@@ -42,6 +42,16 @@
     </fieldset>
 
     <fieldset>
+      <legend><%= it.t('settings.orga') %></legend>
+      <p class="hint"><%= it.t('settings.orgaHint') %></p>
+      <label class="checkbox"><input type="checkbox" name="orga_protect" value="1"
+        <%= it.values.orga_password_hash || it.values.orga_protect ? 'checked' : '' %>> <%= it.t('settings.orgaProtect') %></label>
+      <label><%= it.t(it.values.orga_password_hash ? 'settings.orgaPasswordChange' : 'settings.orgaPassword') %>
+        <input type="text" name="orga_password" minlength="8" maxlength="200" autocomplete="off">
+      </label>
+    </fieldset>
+
+    <fieldset>
       <legend><%= it.t('settings.legal') %></legend>
       <p class="hint"><%= it.t('settings.legalHint') %></p>
       <label><%= it.t('settings.imprintUrl') %>

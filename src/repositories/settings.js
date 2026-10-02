@@ -11,7 +11,16 @@ export const DEFAULT_SETTINGS = {
   privacy_url: '',
   // Anmeldungen 14 Tage nach der letzten Schicht automatisch löschen (Datenschutz).
   auto_delete: '1',
+  // Optionales Passwort für /orga (nur der scrypt-Hash; leer = ohne Passwort).
+  orga_password_hash: '',
 };
+
+// Kennung des aktuellen /orga-Passworts. Freigeschaltete Sessions merken sie sich;
+// ändert sich das Passwort, passt sie nicht mehr und die Geräte sind wieder gesperrt.
+export function orgaKey(db) {
+  const hash = getSettings(db).orga_password_hash;
+  return hash ? hash.slice(-16) : null;
+}
 
 export function getSettings(db) {
   const rows = db.prepare('SELECT key, value FROM settings').all();

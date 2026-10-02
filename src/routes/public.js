@@ -6,6 +6,8 @@ import { validateSignupInput } from '../validate.js';
 import { displayName, formatTime, formatDay, localNow, pastCutoff } from '../display.js';
 import { requireCsrf, rateLimiter } from '../server.js';
 import { translator, LANGS } from '../i18n.js';
+import { verifyPassword } from '../auth.js';
+import { getSettings, orgaKey } from '../repositories/settings.js';
 
 const HTOKEN_MAX_AGE = 60 * 60 * 24 * 120; // 120 Tage
 
@@ -80,7 +82,24 @@ export function registerPublicRoutes(app) {
     max: app.config.signupRateMax ?? 120, timeWindow: '1 minute', keyGenerator: () => 'signup',
   });
 
+  const orgaLoginLimit = rateLimiter(app, { max: 10, timeWindow: '1 minute', keyGenerator: () => 'orga-login' });
+
+  // /orga ist frei, wenn kein Passwort gesetzt ist, die Session freigeschaltet
+  // wurde oder ein Admin eingeloggt ist.
+  function orgaUnlocked(req) {
+    const key = orgaKey(db);
+    return !key || req.isAdmin || req.session.orga_key === key;
+  }
+
+  function orgaLoginPage(req, reply, error = null) {
+    const t = translator(req.lang);
+    return reply.type('text/html').send(app.render('orga-login', pub(req, {
+      title: t('title.orga'), csrf: req.session.csrf, error,
+    })));
+  }
+
   async function handleSignup(req, reply, orga) {
+    if (orga && !orgaUnlocked(req)) return reply.redirect('/orga');
     if (!(await signupLimit(req, reply))) return;
     if (!requireCsrf(req, reply)) return;
     const result = validateSignupInput(req.body);
@@ -88,7 +107,11 @@ export function registerPublicRoutes(app) {
     if (!result.ok) {
       return reply.code(200).type('text/html').send(render(app, req, { orga, errors: result.errors, values: req.body }));
     }
+    // Orga-Schichten nur über /orga, normale nur über / (sonst "nicht gefunden").
     const shift = getShift(db, shiftId);
+    if (shift && Boolean(shift.is_orga) !== orga) {
+      return reply.code(200).type('text/html').send(render(app, req, { orga, errors: ['err.notFound'], values: req.body }));
+    }
     if (shift && shift.requires_phone && !result.value.phone) {
       return reply.code(200).type('text/html').send(render(app, req, {
         orga, errors: ['err.phoneRequired'], values: req.body,
@@ -116,7 +139,19 @@ export function registerPublicRoutes(app) {
   app.post('/signup', (req, reply) => handleSignup(req, reply, false));
 
   app.get('/orga', (req, reply) => {
+    if (!orgaUnlocked(req)) return orgaLoginPage(req, reply);
     reply.type('text/html').send(render(app, req, { orga: true }));
+  });
+
+  app.post('/orga/login', async (req, reply) => {
+    if (!(await orgaLoginLimit(req, reply))) return;
+    if (!requireCsrf(req, reply)) return;
+    const hash = getSettings(db).orga_password_hash;
+    if (hash && !verifyPassword(String(req.body.password ?? ''), hash)) {
+      return orgaLoginPage(req, reply, 'orga.wrongPassword');
+    }
+    db.prepare('UPDATE sessions SET orga_key = ? WHERE id = ?').run(orgaKey(db), req.session.id);
+    return reply.redirect('/orga');
   });
 
   app.post('/orga/signup', (req, reply) => handleSignup(req, reply, true));

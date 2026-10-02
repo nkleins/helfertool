@@ -20,7 +20,8 @@ das Orga-Team plant Bereiche und Schichten im Admin-Bereich.
 - **Meine Schichten**: eigene Anmeldungen auf dem Gerät ansehen und abmelden
 - **Deutsch/Englisch** umschaltbar – Helferseiten und Admin-Bereich; Bereiche und Schichten
   optional mit englischem Text
-- **Orga-Schichten** unter `/orga` mit vollem Namen und Telefonnummer
+- **Orga-Schichten** unter `/orga` mit vollem Namen und Telefonnummer – optional mit Passwort
+  geschützt (in den Einstellungen)
 - **Schicht-Generator**: ein Zeitfenster wird automatisch in gleich lange Schichten geteilt
 - **Accounts mit Rechten**: Hauptadmin plus Team-Accounts, die nur bestimmte Bereiche sehen
   oder nur bestimmte Dinge dürfen

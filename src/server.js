@@ -46,7 +46,7 @@ export function buildApp(config, db) {
   app.decorate('config', config);
   app.decorate('db', db);
   app.decorate('render', (view, data) => {
-    const brand = getSettings(db);
+    const { orga_password_hash: _hidden, ...brand } = getSettings(db);
     const logoVersion = getLogoVersion(db);
     brand.logoUrl = logoVersion ? `/logo?v=${encodeURIComponent(logoVersion)}` : '/logo';
     const lang = data.lang ?? 'de';

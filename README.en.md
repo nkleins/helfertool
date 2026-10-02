@@ -21,7 +21,8 @@ area.
 - **My shifts**: see and cancel your own sign-ups on your device
 - **German/English** switch – for the volunteer pages and the admin area; areas and shifts can
   optionally have an English text
-- **Orga shifts** under `/orga` with full names and phone numbers
+- **Orga shifts** under `/orga` with full names and phone numbers – optionally protected with a
+  password (in the settings)
 - **Shift generator**: splits a time window into shifts of equal length automatically
 - **Accounts with permissions**: a main admin plus team accounts that only see certain areas or
   may only do certain things
